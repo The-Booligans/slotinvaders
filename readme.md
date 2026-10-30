@@ -1,5 +1,9 @@
 # Slot Invaders
 
+[![CI](https://github.com/The-Booligans/slotinvaders/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/The-Booligans/slotinvaders/actions/workflows/ci.yml)
+[![Coverage](https://coveralls.io/repos/github/The-Booligans/slotinvaders/badge.svg?branch=main)](https://coveralls.io/github/The-Booligans/slotinvaders?branch=main)
+[![Dependencies](https://img.shields.io/librariesio/github/The-Booligans/slotinvaders)](https://libraries.io/github/The-Booligans/slotinvaders)
+
 [![BaselHack 2026](https://img.shields.io/badge/BaselHack-2026-ff3b30?style=for-the-badge&logo=github&logoColor=white)](https://www.baselhack.ch/)
 [![Challenge: Endress+Hauser](https://img.shields.io/badge/Challenge-Endress%2BHauser-005b82?style=for-the-badge)](https://www.endress.com/)
 [![License: MIT](https://img.shields.io/badge/License-MIT-success?style=for-the-badge)](license.txt)
@@ -23,7 +27,6 @@
 [![Bicep](https://img.shields.io/badge/Bicep-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/azure-resource-manager/bicep/)
 
 [![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=flat&logo=espressif&logoColor=white)](https://www.espressif.com/en/products/socs/esp32)
-[![PlatformIO](https://img.shields.io/badge/PlatformIO-F5822A?style=flat&logo=platformio&logoColor=white)](https://platformio.org/)
 [![LiDAR / ToF / mmWave](https://img.shields.io/badge/Sensors-ToF%20%C2%B7%20LiDAR%20%C2%B7%20mmWave-6366f1?style=flat)](documentation/sensor-evaluation.md)
 
 **Find my Bike Slot** — a BaselHack 2026 entry for the Endress+Hauser challenge.

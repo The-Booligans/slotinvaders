@@ -47,4 +47,12 @@ jobs:
 
       - name: test
         if: matrix.task == 'test'
-        run: pnpm test
+        run: pnpm coverage
+
+      - name: upload coverage to Coveralls
+        if: matrix.task == 'test'
+        uses: coverallsapp/github-action@v2
+        with:
+          github-token: ${{ secrets.GITHUB_TOKEN }}
+          path-to-lcov: code/debug/coverage/lcov.info
+          flag-name: debug-app
