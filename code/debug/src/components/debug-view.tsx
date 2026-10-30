@@ -13,7 +13,7 @@ import { Badge } from "@/components/ui/badge";
 import { DeviceImage } from "@/components/device-image";
 import { DeviceLogs } from "@/components/device-logs";
 import { api } from "@/lib/api";
-import { cn, relativeTime } from "@/lib/utils";
+import { relativeTime } from "@/lib/utils";
 import type { DebugDeviceSummary, LogEntry } from "@/lib/schemas";
 
 const ALL = "__all__";
@@ -155,7 +155,7 @@ function StatusPill({ snapshot }: { snapshot: SnapshotState }) {
   }
   return (
     <span className="inline-flex items-center gap-2 text-xs text-[var(--color-muted-foreground)]">
-      <span className={cn("h-2 w-2 rounded-full bg-emerald-400")} />
+      <span className="h-2 w-2 rounded-full bg-emerald-400" />
       updated {relativeTime(snapshot.at)}
     </span>
   );

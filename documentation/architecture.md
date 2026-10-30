@@ -4,7 +4,19 @@ BaselHack 2026 · Endress+Hauser "Find my Bike Slot"
 
 > "Velo Stands" is a working name.
 
-Devices at each bike stand report how many bikes they see over HTTPS. Each device counts on its own hardware or uploads an image that an Azure model counts. Azure Functions keep the latest state in Cosmos DB and push every change over Web PubSub to two front ends. The **app** is one build that runs as a PWA and, wrapped in Capacitor, on iOS and Android. The **landing page** promotes the project. Nobody logs in.
+Devices at each bike stand count the bikes they see and report the number — never an image — over HTTPS. Azure Functions keep the latest state in Cosmos DB and push every change over Web PubSub to two front ends. The **app** is one build that runs as a PWA and, wrapped in Capacitor, on iOS and Android. The **landing page** promotes the project. Nobody logs in.
+
+## Privacy stance: no images leave the stand
+
+This is a privacy-by-design challenge. Our plan A is to count **without ever sending an image off the device**:
+
+- Each device turns its raw signal (depth map, point cloud, ToF ranges, on-board inference) into one integer: the number of bikes it currently sees.
+- Only that integer, plus a few housekeeping fields, reaches the backend.
+- There is no cloud image endpoint on the happy path. The sensor and the firmware are the whole pipeline.
+
+**Plan B — cloud image recognition — is a fallback.** If no sensor configuration we can source, mount and tune in the time available counts reliably enough, we fall back to uploading a cropped JPEG for Azure AI Vision to count, and dropping the frame immediately. The code path and schema for this exist, but it is explicitly a fallback, not the target architecture.
+
+See [sensor-evaluation.md](sensor-evaluation.md) for the sensors we test and the numbers we measure.
 
 The first version only covers the API, the shared contracts, the tools and an unstyled PWA. See [build-v1.md](build-v1.md).
 
@@ -19,32 +31,36 @@ The first version only covers the API, the shared contracts, the tools and an un
 | Config | YAML in the repo, validated with Zod in CI. |
 | Stands | A stand has a number of slots and any number of devices. Each device sends the number of bikes it sees. Free slots = slots − the sum of all its devices' counts. |
 | Devices | Devices on one stand never watch the same bikes. There are no slot ranges, no voting and no estimates for unwatched places. |
-| Counting | Either on the device, or in the cloud from an uploaded image. A cloud device may also send its own count, which is stored for comparison only. |
-| Recognizer | Azure AI Vision, Image Analysis object detection, counting the boxes labelled `bicycle`. |
-| Images | Never stored. An image is held in memory for one recognition call and then dropped. Only the count is kept. |
+| Counting (plan A) | On the device, from a non-image sensor. The firmware is the whole pipeline; only the integer count leaves the stand. |
+| Counting (plan B) | Fallback for stands where no sensor configuration works in time: upload a cropped JPEG to Azure AI Vision, count, drop the frame. Used only where plan A fails. |
+| Sensor choice | Decided per area, from measurements. See [sensor-evaluation.md](sensor-evaluation.md). We expect to mix: ToF/LiDAR for small/covered stands, on-device CV on ESP32-S3 or a small SBC for wider open racks. |
+| Recognizer (plan B) | Azure AI Vision, Image Analysis object detection, counting the boxes labelled `bicycle`. |
+| Images | Default path never sees one. On the plan-B fallback, an image is held in memory for one recognition call and then dropped. Only the count is kept. |
 
 ## How the pieces connect
 
 ```mermaid
 flowchart LR
   subgraph Field
-    D["Devices ×n<br/>count on device<br/>or send cropped image"]
+    D["Devices ×n<br/>count on device<br/>(ToF · LiDAR · on-device CV)"]
+    DF["Fallback device<br/>cropped image upload<br/>(only where plan A fails)"]
     S["Simulator<br/>same API, sim keys"]
   end
   C[("config/stands.yaml<br/>areas · stands · devices")]
   subgraph Azure
-    F["Azure Functions<br/>POST /v1/readings<br/>POST /v1/images<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
-    V["AI Vision<br/>object detection"]
+    F["Azure Functions<br/>POST /v1/readings<br/>POST /v1/images (fallback)<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
+    V["AI Vision<br/>(fallback only)"]
     DB[("Cosmos DB serverless<br/>state · readings")]
     P["Web PubSub<br/>hub: occupancy"]
   end
   A["App<br/>PWA · iOS · Android"]
   L["Landing page<br/>live counter"]
 
-  D -- "HTTPS + X-Api-Key" --> F
+  D -- "HTTPS + X-Api-Key<br/>count only" --> F
+  DF -. fallback .-> F
   S --> F
   C -. bundled at deploy .-> F
-  F <--> V
+  F -. fallback .-> V
   F --> DB
   F == broadcast ==> P
   P == wss ==> A
@@ -57,10 +73,12 @@ flowchart LR
 
 | Part | Tech | Job |
 |---|---|---|
-| Devices | ESP32 cameras, LiDAR, ToF, whatever we test | Every 60 s, or on change: send a count or an image. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
+| Devices (plan A) | ToF arrays, LiDAR (e.g. RPLidar C1), mmWave radar, ultrasonic arrays, on-device CV on ESP32-S3 — one per stand or several | Count locally, every 60 s or on change, and send only the integer. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
+| Devices (plan B, fallback) | ESP32-CAM / ESP32-S3-CAM | Send a cropped JPEG for cloud counting. Used only where no plan-A sensor configuration proves out. |
+| Sensor evaluation | `code/firmware/experiments/*` + `documentation/sensor-evaluation.md` | For each candidate sensor: wiring, firmware spike, bench + on-site accuracy, false-positive rate, cost, power, mounting constraints. The results pick what we deploy. |
 | Config | `config/stands.yaml` | The single source of truth for areas, stands and devices. CI validates it. The build copies it into the Function App, and copies a public subset (without hashes) into the front ends. |
-| API | Azure Functions, Node 22, TypeScript | Authenticates devices, counts uploaded images, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. |
-| Recognition | Azure AI Vision, Image Analysis object detection | Counts the boxes labelled `bicycle` above a confidence threshold set in the config. |
+| API | Azure Functions, Node 22, TypeScript | Authenticates devices, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. The `/v1/images` endpoint is only used by fallback devices. |
+| Recognition (fallback) | Azure AI Vision, Image Analysis object detection | Counts the boxes labelled `bicycle` above a confidence threshold set in the config. Only engaged for stands flagged as plan B in the config. |
 | Database | Cosmos DB for NoSQL, serverless | Holds the latest state per area, plus raw readings with a TTL for history. |
 | Push | Azure Web PubSub | Sends each area update to every connected client. |
 | App | Next.js static export, Serwist, Capacitor | The product: where to park right now. One build runs as an installable PWA at `app.<domain>`, and Capacitor wraps the same build for iOS and Android. |
@@ -100,11 +118,12 @@ flowchart LR
 
 ## What happens when a bike is parked
 
-1. Stand `fsw-1` at Flow South West has 20 slots and two devices. `cam-01` counts 9 bikes itself and sends `POST /v1/readings`. `cam-02` sends a cropped JPEG to `POST /v1/images`.
+1. Stand `fsw-1` at Flow South West has 20 slots and two devices. `tof-01` is a ToF array that counts occupied bays locally and sees 9 bikes; `lidar-01` is a LiDAR scanner that sees 8. Both send `POST /v1/readings`. Neither ever sends an image.
 2. The Function hashes the API key and finds the device in the bundled config, which gives it the stand and the mode. The device never says who it is in the request body.
-3. For an image, the Function calls the recognizer, counts the bicycles (say 8) and drops the image. From here on both paths are the same.
-4. It appends the reading to `readings` with its source and stores the device's latest count in `state`. The stand then has 20 − (9 + 8) = 3 free slots. The area total is the sum of its stands.
-5. If an area's free count or stale flag changed, it broadcasts one small JSON message through Web PubSub, and every open client updates within about a second.
+3. The Function appends the reading to `readings` with its source and stores the device's latest count in `state`. The stand then has 20 − (9 + 8) = 3 free slots. The area total is the sum of its stands.
+4. If an area's free count or stale flag changed, it broadcasts one small JSON message through Web PubSub, and every open client updates within about a second.
+
+**Fallback path.** If a stand is on plan B (no sensor configuration proved out for it), its device is an ESP32-CAM in `cloud` mode: it sends a cropped JPEG to `POST /v1/images`. The Function calls Azure AI Vision, counts the bicycles, drops the image, and from step 3 on the path is identical.
 
 A client that opens later first fetches `GET /v1/state`, then calls `/negotiate` and opens the WebSocket for changes. After a reconnect it fetches the snapshot again, so it never misses an update without noticing.
 
@@ -132,19 +151,27 @@ stands:
     slots: 20
 
 devices:
-  - id: cam-01
+  # Plan A: non-image sensors, count locally, send only an integer
+  - id: tof-01
     stand: fsw-1
-    hardware: esp32-cam
-    mode: device             # device: sends a count · cloud: sends an image
+    hardware: vl53l5cx-array   # 8×8 ToF, one head per bay group
+    mode: device
     keyHash: "sha256:9f2c…e41a"
-  - id: cam-02
+  - id: lidar-01
     stand: fsw-1
-    hardware: esp32-s3-cam
-    mode: cloud
+    hardware: rplidar-c1
+    mode: device
     keyHash: "sha256:51b0…07cd"
 
-recognition:
-  model: azure-ai-vision     # Image Analysis, object detection
+  # Plan B: only where no sensor configuration proved out for this stand
+  - id: cam-fallback-01
+    stand: flow-garage-north-3
+    hardware: esp32-s3-cam
+    mode: cloud                # sends an image for cloud recognition
+    keyHash: "sha256:a4e1…22bd"
+
+recognition:                   # only used by cloud-mode (fallback) devices
+  model: azure-ai-vision       # Image Analysis, object detection
   label: bicycle
   minConfidence: 0.5
 
@@ -153,7 +180,7 @@ settings:
   readingTtlDays: 30
 ```
 
-To add a device, run `pnpm device:add cam-03 --stand fsw-1 --mode cloud` and open a pull request. The command prints the key once, for flashing, and writes only the hash into the file. Point the devices on one stand at different bikes; the backend just adds up their counts.
+To add a device, run `pnpm device:add tof-02 --stand fsw-1 --mode device --hardware vl53l5cx-array` and open a pull request. The command prints the key once, for flashing, and writes only the hash into the file. Point the devices on one stand at different bikes; the backend just adds up their counts.
 
 ## Device API
 

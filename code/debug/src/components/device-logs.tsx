@@ -1,9 +1,8 @@
 "use client";
 
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card";
-import { Badge } from "@/components/ui/badge";
-import { cn, formatTimestamp } from "@/lib/utils";
-import type { BadgeProps } from "@/components/ui/badge";
+import { Badge, type BadgeProps } from "@/components/ui/badge";
+import { formatTimestamp } from "@/lib/utils";
 import type { LogEntry, LogLevel } from "@/lib/schemas";
 
 const LEVEL_VARIANT: Record<LogLevel, BadgeProps["variant"]> = {
@@ -58,9 +57,7 @@ export function DeviceLogs({
                   <Badge variant={LEVEL_VARIANT[entry.level]} className="justify-self-start">
                     {entry.level}
                   </Badge>
-                  <span className={cn("text-[var(--color-muted-foreground)]")}>
-                    {entry.deviceId}
-                  </span>
+                  <span className="text-[var(--color-muted-foreground)]">{entry.deviceId}</span>
                   <span className="whitespace-pre-wrap break-words text-[var(--color-foreground)]">
                     {entry.message}
                     {entry.context && Object.keys(entry.context).length > 0 ? (
