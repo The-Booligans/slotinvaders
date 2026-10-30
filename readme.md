@@ -2,7 +2,6 @@
 
 [![CI](https://github.com/The-Booligans/slotinvaders/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/The-Booligans/slotinvaders/actions/workflows/ci.yml)
 [![Coverage](https://codecov.io/gh/The-Booligans/slotinvaders/branch/main/graph/badge.svg)](https://codecov.io/gh/The-Booligans/slotinvaders)
-[![Dependencies](https://img.shields.io/librariesio/github/The-Booligans/slotinvaders)](https://libraries.io/github/The-Booligans/slotinvaders)
 
 [![BaselHack 2026](https://img.shields.io/badge/BaselHack-2026-ff3b30?style=for-the-badge&logo=github&logoColor=white)](https://www.baselhack.ch/)
 [![Challenge: Endress+Hauser](https://img.shields.io/badge/Challenge-Endress%2BHauser-005b82?style=for-the-badge)](https://www.endress.com/)
