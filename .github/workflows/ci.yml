@@ -51,6 +51,7 @@ jobs:
 
       - name: upload coverage to Coveralls
         if: matrix.task == 'test'
+        continue-on-error: true # soft-fail until the repo is public (Coveralls free tier)
         uses: coverallsapp/github-action@v2
         with:
           github-token: ${{ secrets.GITHUB_TOKEN }}
