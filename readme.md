@@ -1,3 +1,7 @@
+<p align="center">
+  <img src="assets/TheBooligans.png" alt="The Booligans" width="320" />
+</p>
+
 # Slot Invaders
 
 [![CI](https://github.com/The-Booligans/slotinvaders/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/The-Booligans/slotinvaders/actions/workflows/ci.yml)
