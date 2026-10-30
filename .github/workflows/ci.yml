@@ -49,11 +49,11 @@ jobs:
         if: matrix.task == 'test'
         run: pnpm coverage
 
-      - name: upload coverage to Coveralls
+      - name: upload coverage to Codecov
         if: matrix.task == 'test'
-        continue-on-error: true # soft-fail until the repo is public (Coveralls free tier)
-        uses: coverallsapp/github-action@v2
+        uses: codecov/codecov-action@v5
         with:
-          github-token: ${{ secrets.GITHUB_TOKEN }}
-          path-to-lcov: code/debug/coverage/lcov.info
-          flag-name: debug-app
+          token: ${{ secrets.CODECOV_TOKEN }}
+          files: code/debug/coverage/lcov.info
+          flags: debug-app
+          fail_ci_if_error: false
