@@ -114,7 +114,7 @@ flowchart LR
 | [Web PubSub](https://learn.microsoft.com/azure/azure-web-pubsub/) | Managed WebSockets. |
 | [AI Vision Image Analysis](https://learn.microsoft.com/azure/ai-services/computer-vision/overview-image-analysis) | Prebuilt object detection. |
 | [Static Web Apps](https://learn.microsoft.com/azure/static-web-apps/) | Hosting for both front ends. |
-| [Bicep](https://learn.microsoft.com/azure/azure-resource-manager/bicep/) | Infrastructure as code. |
+| [Terraform](https://www.terraform.io/) | Infrastructure as code (with the `azurerm` provider). |
 
 ## What happens when a bike is parked
 

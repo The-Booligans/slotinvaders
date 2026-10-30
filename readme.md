@@ -26,7 +26,7 @@
 [![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/cosmos-db/)
 [![Web PubSub](https://img.shields.io/badge/Web%20PubSub-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/azure-web-pubsub/)
 [![AI Vision](https://img.shields.io/badge/AI%20Vision-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/ai-services/computer-vision/)
-[![Bicep](https://img.shields.io/badge/Bicep-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/azure-resource-manager/bicep/)
+[![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io/)
 
 [![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=flat&logo=espressif&logoColor=white)](https://www.espressif.com/en/products/socs/esp32)
 [![LiDAR / ToF / mmWave](https://img.shields.io/badge/Sensors-ToF%20%C2%B7%20LiDAR%20%C2%B7%20mmWave-6366f1?style=flat)](documentation/sensor-evaluation.md)
@@ -99,7 +99,7 @@ be reproduced.
 - **Sensors (plan A)** — ST VL53L5CX ToF · RPLidar C1 · mmWave radar · ultrasonic arrays · on-device CV on ESP32-S3
 - **Fallback (plan B)** — ESP32-CAM / ESP32-S3-CAM + Azure AI Vision Image Analysis
 - **Shared** — Zod schemas, TypeScript contracts, `computeViews` pure function
-- **Tooling** — pnpm workspaces · Oxlint · Oxfmt · Vitest · Bicep
+- **Tooling** — pnpm workspaces · Oxlint · Oxfmt · Vitest · Terraform
 
 ## Challenge
 
