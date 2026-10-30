@@ -1,12 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  DebugImage,
-  DebugSnapshot,
-  Device,
-  DeviceLogs,
-  LogEntry,
-  PublicConfig,
-} from "./schemas";
+import { DebugImage, DebugSnapshot, Device, DeviceLogs, LogEntry, PublicConfig } from "./schemas";
 
 describe("Device", () => {
   it("accepts a valid device", () => {
@@ -99,9 +92,7 @@ describe("PublicConfig", () => {
       site: { id: "reinach", name: "Endress+Hauser Reinach", timezone: "Europe/Zurich" },
       areas: [{ id: "flow-sw", name: "Flow South West", kind: "covered" as const }],
       stands: [{ id: "fsw-1", area: "flow-sw", slots: 20 }],
-      devices: [
-        { id: "cam-01", stand: "fsw-1", hardware: "esp32-cam", mode: "device" as const },
-      ],
+      devices: [{ id: "cam-01", stand: "fsw-1", hardware: "esp32-cam", mode: "device" as const }],
     };
     expect(() => PublicConfig.parse(config)).not.toThrow();
   });

@@ -15,7 +15,10 @@ const snapshot = {
 };
 
 function stubFetch(impl: (url: string) => Promise<Response>) {
-  vi.stubGlobal("fetch", vi.fn((url: string) => impl(url)));
+  vi.stubGlobal(
+    "fetch",
+    vi.fn((url: string) => impl(url)),
+  );
 }
 
 function okResponse(body: unknown): Response {

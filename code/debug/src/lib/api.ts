@@ -8,8 +8,7 @@ import {
 } from "./schemas";
 
 const BASE =
-  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) ||
-  "http://localhost:7071";
+  (typeof process !== "undefined" && process.env.NEXT_PUBLIC_API_URL) || "http://localhost:7071";
 
 async function getJson<T>(path: string, parser: (data: unknown) => T): Promise<T> {
   const res = await fetch(`${BASE}${path}`, { cache: "no-store" });
@@ -18,8 +17,7 @@ async function getJson<T>(path: string, parser: (data: unknown) => T): Promise<T
 }
 
 export const api = {
-  config: () =>
-    getJson<PublicConfigT>("/api/v1/config", (d) => PublicConfig.parse(d)),
+  config: () => getJson<PublicConfigT>("/api/v1/config", (d) => PublicConfig.parse(d)),
 
   debugSnapshot: () =>
     getJson<DebugSnapshotT>("/api/v1/debug/devices", (d) => DebugSnapshot.parse(d)),

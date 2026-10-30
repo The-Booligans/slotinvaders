@@ -96,9 +96,7 @@ export function DebugView() {
     <div className="mx-auto flex min-h-screen max-w-7xl flex-col gap-6 p-6">
       <header className="flex flex-col gap-3 border-b pb-4 md:flex-row md:items-end md:justify-between">
         <div>
-          <h1 className="text-xl font-semibold tracking-tight">
-            Velo Stands · ESP32 debug
-          </h1>
+          <h1 className="text-xl font-semibold tracking-tight">Velo Stands · ESP32 debug</h1>
           <p className="text-sm text-[var(--color-muted-foreground)]">
             Last frame and logs for the sensors in the field.
           </p>
@@ -126,8 +124,8 @@ export function DebugView() {
           <p className="font-medium">Cannot reach the API</p>
           <p className="mt-1 text-xs opacity-80">{snapshot.message}</p>
           <p className="mt-2 text-xs opacity-70">
-            Set <code className="font-mono">NEXT_PUBLIC_API_URL</code> and make sure the Function App
-            exposes <code className="font-mono">/api/v1/debug/devices</code> and{" "}
+            Set <code className="font-mono">NEXT_PUBLIC_API_URL</code> and make sure the Function
+            App exposes <code className="font-mono">/api/v1/debug/devices</code> and{" "}
             <code className="font-mono">/api/v1/debug/devices/[id]/logs</code>.
           </p>
         </div>
@@ -161,13 +159,7 @@ function StatusPill({ snapshot }: { snapshot: SnapshotState }) {
   );
 }
 
-function AllDevices({
-  devices,
-  loading,
-}: {
-  devices: DebugDeviceSummary[];
-  loading: boolean;
-}) {
+function AllDevices({ devices, loading }: { devices: DebugDeviceSummary[]; loading: boolean }) {
   if (loading && devices.length === 0) {
     return <p className="text-sm text-[var(--color-muted-foreground)]">Loading devices…</p>;
   }
@@ -188,13 +180,7 @@ function AllDevices({
   );
 }
 
-function SingleDevice({
-  summary,
-  logs,
-}: {
-  summary: DebugDeviceSummary | null;
-  logs: LogsState;
-}) {
+function SingleDevice({ summary, logs }: { summary: DebugDeviceSummary | null; logs: LogsState }) {
   if (!summary) {
     return <p className="text-sm text-[var(--color-muted-foreground)]">Unknown device.</p>;
   }

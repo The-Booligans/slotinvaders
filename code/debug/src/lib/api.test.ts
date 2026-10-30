@@ -37,7 +37,9 @@ describe("api", () => {
   it("passes the limit as a query param on deviceLogs", async () => {
     const fetchMock = mockFetch({ deviceId: "cam-01", entries: [] });
     await api.deviceLogs("cam-01", 50);
-    expect(fetchMock.mock.calls[0][0]).toMatch(/\/api\/v1\/debug\/devices\/cam-01\/logs\?limit=50$/);
+    expect(fetchMock.mock.calls[0][0]).toMatch(
+      /\/api\/v1\/debug\/devices\/cam-01\/logs\?limit=50$/,
+    );
   });
 
   it("url-encodes the device id", async () => {
