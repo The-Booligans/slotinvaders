@@ -118,7 +118,7 @@ The Booligans:
 
 - Dobrawa Kiefer
 - Nila M.
-- Artur Semenko
+- Artur Semenenko
 - Luca Rullo
 - Samuel Rink
 - Valentino Rusconi
