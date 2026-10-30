@@ -38,4 +38,14 @@ describe("relativeTime", () => {
   it("returns the input unchanged for an invalid date", () => {
     expect(relativeTime("nope", now)).toBe("nope");
   });
+
+  it("switches units at the exact minute boundary", () => {
+    const sixtySecondsAgo = new Date(now.getTime() - 60 * 1000).toISOString();
+    expect(relativeTime(sixtySecondsAgo, now)).toBe("1m ago");
+  });
+
+  it("switches units at the exact hour boundary", () => {
+    const oneHourAgo = new Date(now.getTime() - 3600 * 1000).toISOString();
+    expect(relativeTime(oneHourAgo, now)).toBe("1h ago");
+  });
 });
