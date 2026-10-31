@@ -15,15 +15,14 @@
 # `assignments:` instead (see the example at the end of this file).
 #
 # All slot counts are placeholders until Endress+Hauser confirms real
-# capacities. Device keys: keyHash is "sha256:" + the SHA-256 (lowercase hex) of the
-# device's secret API key. Raw keys live in `device-keys.secret.yaml` (git-ignored),
-# are flashed to the device, sent as X-Api-Key and never committed; the API hashes
-# what it receives and compares it with keyHash. To get the keyHash of a secret,
-# or a new random secret:
+# capacities.
+#
+# Device keys: keyHash is "sha256:" + the SHA-256 (lowercase hex) of the
+# device's secret API key. The secret is flashed to the device, sent as
+# X-Api-Key and never committed; the API hashes what it receives and compares
+# it with keyHash. To get the keyHash of a secret, or a new random secret:
 #   node scripts/new-device-key.js <secret>
 #   node scripts/new-device-key.js
-# To rotate a key, replace the entry in the secrets file and update the matching
-# keyHash here.
 #
 # Device IDs are StarCraft units. Short, memorable, pronounceable over Slack
 # when something misbehaves ("the raven is stale again").

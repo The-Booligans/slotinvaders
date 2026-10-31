@@ -1,4 +1,13 @@
-# Velo Stands – device API (Azure Functions, Node.js 22)
+# Velo Stands – device API and stand status (Azure Functions, Node.js 22)
+
+Two HTTP functions:
+
+| Function | Route | Auth | |
+|---|---|---|---|
+| `readings` | `POST /api/v1/readings` | device key in `X-Api-Key` | Devices send their count |
+| `stands` | `GET /api/v1/stands[/<standId>]` | none (public, read-only) | Name, current and maximum occupancy per stand |
+
+## POST /api/v1/readings
 
 Devices send the number of bikes they see. The function finds the device's stand and works out the free slots, `max(0, slots − sum of all the stand's device counts)`. It then updates Cosmos DB and logs every step.
 
@@ -28,7 +37,50 @@ Content-Type: application/json
 
 `occupied` and `seq` are required; `measuredAt`, `fw` and `rssi` are optional. A `seq` lower than the last one is accepted if the device has been silent longer than `staleAfterSeconds` (300 s), because it most likely restarted.
 
-## What it writes
+## GET /api/v1/stands (public)
+
+Returns each stand's name, current occupancy and maximum occupancy. No key is needed, and any web page may call it.
+
+| Request | Returns |
+|---|---|
+| `GET /api/v1/stands` | All active stands |
+| `GET /api/v1/stands?area=kaegen-hof` | The stands of one area (404 for an unknown area) |
+| `GET /api/v1/stands/kaegen-hof-1` | One stand (404 if unknown or retired) |
+
+```json
+GET /api/v1/stands
+{
+  "at": "2026-11-02T07:00:00.000Z",
+  "stands": [
+    { "id": "kaegen-hof-1", "name": "Kägenstrasse 2 – Hof, Stand 1",
+      "areaId": "kaegen-hof", "areaName": "Kägenstrasse 2 – Hof",
+      "currentOccupancy": 21, "maxOccupancy": 40, "free": 19,
+      "stale": false, "updatedAt": "2026-11-02T06:59:30.000Z" }
+  ]
+}
+```
+
+| Field | Meaning |
+|---|---|
+| `currentOccupancy` | Bikes counted now: the sum of the latest count of every device assigned to the stand. A device that never reported counts as 0. It can exceed `maxOccupancy` if two devices see the same bike. |
+| `maxOccupancy` | The stand's slots from `stands.yaml` |
+| `free` | `max(0, maxOccupancy − currentOccupancy)` |
+| `stale` | `true` if a device of the stand never reported or has been quiet for more than `staleAfterSeconds` (300 s). The numbers may then be out of date. |
+| `updatedAt` | Time of the stand's most recent device report, or `null` |
+
+The numbers are worked out on every request from the latest device counts, so a device that goes quiet shows up as `stale` without any extra job. To keep a public endpoint cheap, the device counts are read from Cosmos DB at most every 5 s per instance (`STATE_CACHE_SECONDS`), and browsers may cache the answer for 5 s. Each Cosmos read costs about 3 RU, whatever the number of callers.
+
+Log lines look like this:
+
+```
+[stands 5e1a77c0] -> GET /api/v1/stands from 198.51.100.23
+[stands 5e1a77c0] state loaded: 6 area documents (2.86 RU)
+[stands 5e1a77c0] cmr-ost-1: ling=0 (never reported) = 0 of 20 slots, 20 free (stale: ling never reported)
+[stands 5e1a77c0] kaegen-hof-1: thor=9 + probe=12 = 21 of 40 slots, 19 free
+[stands 5e1a77c0] <- 200 in 22 ms, 5.9 RU | 6 stands, 1 stale
+```
+
+## What the readings function writes
 
 | Container | What changes |
 |---|---|
@@ -41,9 +93,17 @@ Two devices in the same area can send at the same moment. The area document is t
 
 | File | |
 |---|---|
+<<<<<<< Updated upstream
 | `src/functions/readings.js` | Registers `POST /api/v1/readings` |
 | `src/functions/config.js` | Registers `GET /api/v1/config` |
 | `src/functions/debug.js` | Registers `GET /api/v1/debug/devices` and `GET /api/v1/debug/devices/{deviceId}/logs` |
+=======
+| `src/functions/readings.js` | Registers the HTTP function `POST /api/v1/readings` |
+| `src/functions/stands.js` | Registers the HTTP function `GET /api/v1/stands/{standId?}` |
+| `src/lib/stands.js` | Stand status: state cache, totals, public response |
+| `src/lib/runtime.js` | Cosmos containers and caches shared by both functions |
+| `src/lib/http.js` | Log prefix and JSON replies |
+>>>>>>> Stashed changes
 | `src/lib/ingest.js` | The request flow and the log output |
 | `src/lib/debug.js` | Public config and debug handlers |
 | `src/lib/catalog.js` | Catalog cache and key check (SHA-256, compared in constant time) |
@@ -56,7 +116,7 @@ Two devices in the same area can send at the same moment. The area document is t
 | `deploy-function.ps1` | Creates the Azure resources and deploys the code |
 | `scripts/new-device-key.js` | Hashes a device secret, or creates a new one |
 | `scripts/send-test-reading.ps1` | Sends a reading the way a device would |
-| `test/ingest.test.js` | 10 tests against an in-memory Cosmos DB (`npm test`) |
+| `test/ingest.test.js`, `test/stands.test.js` | 17 tests against an in-memory Cosmos DB (`npm test`) |
 
 ## Deploy
 
@@ -157,6 +217,5 @@ NEXT_PUBLIC_API_URL=http://localhost:7071 pnpm --filter code/debug dev
 ## Not in here yet
 
 - `POST /api/v1/images` for cloud-counting devices (`drone`).
-- `GET /api/v1/state` and the Web PubSub broadcast for the app.
-- The timer that marks stands stale when devices go quiet.
+- The Web PubSub broadcast for live updates in the app.
 - The hourly rollup job for weekday trends.

@@ -4,8 +4,12 @@ const crypto = require("node:crypto");
 const { hashKey } = require("./catalog");
 const { validateReading } = require("./validate");
 const { computeStand, describeParts } = require("./occupancy");
+<<<<<<< Updated upstream
 const { reply: httpReply } = require("./http");
 const { deviceLog: defaultDeviceLog } = require("./device-log");
+=======
+const { createLogger, reply, clientIp: getClientIp, round } = require("./http");
+>>>>>>> Stashed changes
 
 // POST /api/v1/readings
 //
@@ -20,6 +24,7 @@ const { deviceLog: defaultDeviceLog } = require("./device-log");
 const RATE_LIMIT_MS = 5_000; // at most one request per device every 5 s
 const MAX_STATE_ATTEMPTS = 5; // retries when two devices of an area write at the same time
 
+<<<<<<< Updated upstream
 function createLogger(context, verbose, { deviceLog, getDeviceId }) {
   const tag = `[readings ${String(context.invocationId ?? "local").slice(0, 8)}]`;
   const record = (level, message) => {
@@ -51,6 +56,8 @@ const reply = httpReply;
 
 const round = (n) => Math.round(n * 100) / 100;
 
+=======
+>>>>>>> Stashed changes
 /**
  * @param {object} deps
  * @param {{ get: (opts?: {force?: boolean}) => Promise<{catalog: any, ageMs: number, reloaded: boolean}> }} deps.catalogCache
@@ -67,13 +74,17 @@ function createReadingsHandler({
 }) {
   return async function handleReading(request, context) {
     const started = Date.now();
+<<<<<<< Updated upstream
     let currentDeviceId = null;
     const log = createLogger(context, verbose, {
       deviceLog,
       getDeviceId: () => currentDeviceId,
     });
+=======
+    const log = createLogger(context, "readings", verbose);
+>>>>>>> Stashed changes
     const receivedAt = now();
-    const clientIp = (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim().replace(/^(\d+\.\d+\.\d+\.\d+):\d+$/, "$1");
+    const clientIp = getClientIp(request);
     let ru = 0;
 
     const finish = (response, summary) => {

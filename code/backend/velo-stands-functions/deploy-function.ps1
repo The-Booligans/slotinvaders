@@ -195,6 +195,7 @@ function Get-DeploymentOutput([string]$Name) {
 }
 $appNameOut = Get-DeploymentOutput 'appName'
 $readingsUrl = Get-DeploymentOutput 'readingsUrl'
+$hostName = Get-DeploymentOutput 'hostName'
 $insightsName = Get-DeploymentOutput 'insightsName'
 if (-not $appNameOut) {
     Write-Host "No Function App deployment found in '$ResourceGroup'. Run the script once without -SkipInfra." -ForegroundColor Red
@@ -243,6 +244,7 @@ Write-Host ''
 Write-Host 'Done.' -ForegroundColor Green
 Write-Host "  Function App   $appNameOut (Consumption plan, Windows, Node.js 22)"
 Write-Host "  Device API     POST $readingsUrl"
+Write-Host "  Stand status   GET  https://$hostName/api/v1/stands   (public, no key)"
 Write-Host "  Logs           Application Insights '$insightsName' (daily cap 0.15 GB)"
 Write-Host ''
 Write-Host 'Send a test reading (needs a device key whose hash is in the catalog, see README):'
