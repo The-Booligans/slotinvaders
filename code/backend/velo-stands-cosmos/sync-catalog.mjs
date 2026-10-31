@@ -86,6 +86,9 @@ export function toCatalog(cfg) {
       errors.push(`device "${d.id}": keyHash is also used by another device`);
     }
     hashes.add(d.keyHash);
+    if (d.config !== undefined && d.config !== null && (typeof d.config !== "object" || Array.isArray(d.config))) {
+      errors.push(`device "${d.id}": config must be a mapping of knob names to values`);
+    }
   }
 
   // Assignments: the explicit list, plus the short form `device.stand`.
@@ -165,6 +168,7 @@ export function toCatalog(cfg) {
       id: `device:${d.id}`, type: "device", siteId,
       deviceId: d.id, name: d.name ?? d.id, hardware: d.hardware ?? "unknown", mode: d.mode,
       keyHash: d.keyHash, serial: d.serial ?? null, status: d.status ?? "active",
+      config: d.config ?? null,  // free-form device knobs, served back by /v1/device/config
     })),
     ...assignments.map((a) => ({
       id: `assignment:${a.device}:${a.validFrom}`, type: "assignment", siteId,

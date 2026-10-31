@@ -64,6 +64,16 @@ devices:
     hardware: rplidar-c1
     mode: device
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+    config:                       # thor fetches these at boot from /v1/device/config
+      slots: 8                    # how many slot bays the LiDAR arc is split into
+      occupiedMm: 650             # slot ≤ this → bike
+      freeMm: 850                 # slot ≥ this → free; between → keep previous
+      bikeRangeMinMm: 250         # calibration: ignore returns closer than this
+      bikeRangeMaxMm: 1800        # calibration: ignore returns farther than this
+      emaAlpha: 0.3               # smoothing of the per-slot nearest return
+      stableLatch: 3              # consecutive scans before flipping a slot
+      calibrationMs: 8000         # how long the direction-learning window lasts
+      reportIntervalMs: 10000     # how often to POST /v1/readings
   - id: probe
     stand: kaegen-hof-1
     hardware: vl53l5cx-array

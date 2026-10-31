@@ -48,7 +48,7 @@ flowchart LR
   end
   C[("config/stands.yaml<br/>areas · stands · devices")]
   subgraph Azure
-    F["Azure Functions<br/>POST /v1/readings<br/>POST /v1/images (fallback)<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
+    F["Azure Functions<br/>POST /v1/readings<br/>POST /v1/images (fallback)<br/>GET /v1/device/config<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
     V["AI Vision<br/>(fallback only)"]
     DB[("Cosmos DB serverless<br/>state · readings")]
     P["Web PubSub<br/>hub: occupancy"]
@@ -173,6 +173,11 @@ devices:
     hardware: rplidar-c1
     mode: device
     keyHash: "sha256:51b0…07cd"
+    config:                    # device-specific knobs, fetched at boot
+      slots: 8                 #   how many slot bays the LiDAR covers
+      occupiedMm: 650          #   hysteresis thresholds (mm)
+      freeMm: 850
+      reportIntervalMs: 10000  #   how often to POST a reading
 
   # Plan B: only where no sensor configuration proved out for this stand
   - id: cam-fallback-01
@@ -193,9 +198,34 @@ settings:
 
 To add a device, run `pnpm device:add tof-02 --stand fsw-1 --mode device --hardware vl53l5cx-array` and open a pull request. The command prints the key once, for flashing, and writes only the hash into the file. Point the devices on one stand at different bikes; the backend just adds up their counts.
 
+### Per-device config
+
+A device's `config:` block is a free-form mapping of knobs the firmware understands — thresholds, how many slot bays the sensor covers, report cadence, calibration windows. The backend treats it as opaque: it rides in the catalog in Cosmos and comes back verbatim through `GET /api/v1/device/config` (authenticated with `X-Api-Key`). The firmware fetches its own config on boot, falls back to its compile-time defaults if the fetch fails, and clamps every value to a plausible range so a typo in YAML can't brick a sensor. For the LiDAR firmware thor this covers `slots`, `occupiedMm` / `freeMm`, `bikeRangeMinMm` / `bikeRangeMaxMm`, `emaAlpha`, `stableLatch`, `calibrationMs` and `reportIntervalMs`. New sensors add their own keys without any backend change.
+
 ## Device API
 
-There are two endpoints, and both use the same API key header. The key identifies the device, and everything else about the device comes from the config.
+There are three endpoints, and all three use the same API key header. The key identifies the device, and everything else about the device comes from the config.
+
+### Fetch the device's own config
+
+```http
+GET /api/v1/device/config
+X-Api-Key: vs_3q9Z…
+```
+
+```json
+200 {
+  "device": "lidar-01",
+  "stand": "fsw-1",
+  "slots": 20,                 // the stand's capacity
+  "config": {                  // device-specific knobs, verbatim from YAML
+    "slots": 8,                //   how many slot bays the LiDAR covers
+    "occupiedMm": 650,
+    "freeMm": 850,
+    "reportIntervalMs": 10000  //   single source of truth for how often to POST
+  }
+}
+```
 
 ### Count from the device
 

@@ -95,6 +95,16 @@ devices:
     mode: device
     status: active
     keyHash: "sha256:2402a58aea192bb6ae85d91417bb5730c773d232ba3a445a21ef08c72606b845"
+    config:                       # thor fetches these at boot from /v1/device/config
+      slots: 8                    # how many slot bays the LiDAR arc is split into
+      occupiedMm: 650             # slot ≤ this → bike
+      freeMm: 850                 # slot ≥ this → free; between → keep previous
+      bikeRangeMinMm: 250         # calibration: ignore returns closer than this
+      bikeRangeMaxMm: 1800        # calibration: ignore returns farther than this
+      emaAlpha: 0.3               # smoothing of the per-slot nearest return
+      stableLatch: 3              # consecutive scans before flipping a slot
+      calibrationMs: 8000         # how long the direction-learning window lasts
+      reportIntervalMs: 10000     # how often to POST /v1/readings
   - id: probe
     name: Kägenstrasse Hof – ToF, near row
     stand: kaegen-hof-1
