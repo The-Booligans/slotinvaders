@@ -47,16 +47,20 @@ Status legend: ⬜ not started · 🧪 testing · ✅ passed · ❌ ruled out
 - **Spike:** `code/firmware/experiments/tof-vl53l5cx/`
 - **Status:** not started.
 
-### ⬜ 1D LiDAR scan — RPLidar C1
+### 🧪 2D LiDAR scan — RPLidar C1
 
-- **Idea:** one 360° head per covered garage, mounted on the ceiling. Cluster
-  returns into bike-shaped silhouettes.
-- **Expected strengths:** covers a large area with one device, no imagery,
-  great accuracy.
-- **Expected weaknesses:** mechanical, cost, needs a clear sightline, parsing
-  silhouettes is non-trivial.
-- **Spike:** `code/firmware/experiments/rplidar-c1/`
-- **Status:** not started.
+- **Idea:** one head above a rack row, scan plane turned vertical and running
+  along the row. Each rotation is a height profile of the row; free places are
+  the gaps wide enough for a bike. Counts bikes whether or not they are in a
+  holder, plus folded e-scooters and motor scooters.
+- **Expected strengths:** one device per row segment (≈ 3 m at 2.3 m height),
+  no imagery, works in the dark, no training data needed.
+- **Expected weaknesses:** mechanical; only sees what crosses the scan plane;
+  people hide what is behind them (handled: hidden sections keep their last
+  state, a person waiting on a free spot marks it "being taken").
+- **Spike:** `code/firmware/experiments/rplidar-c1/` — gap logic, simulation
+  and tests; reports `occupied = capacity − free`.
+- **Status:** works on a simulated rush hour; not yet tested on hardware.
 
 ### ⬜ mmWave radar — e.g. Seeed MR24HPC1 or XENSIV BGT60
 
@@ -115,7 +119,7 @@ spike for the method.
 | Candidate         | Bench acc. | On-site acc. | False+ | Cost/stand | Power | Verdict |
 | ----------------- | ---------- | ------------ | ------ | ---------- | ----- | ------- |
 | VL53L5CX ToF      | —          | —            | —      | —          | —     | ⬜      |
-| RPLidar C1        | —          | —            | —      | —          | —     | ⬜      |
+| RPLidar C1        | —          | —            | —      | —          | —     | 🧪      |
 | mmWave            | —          | —            | —      | —          | —     | ⬜      |
 | Ultrasonic grid   | —          | —            | —      | —          | —     | ⬜      |
 | ESP32-S3 on-device CV | —      | —            | —      | —          | —     | ⬜      |
