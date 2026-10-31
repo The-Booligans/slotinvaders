@@ -1,8 +1,3 @@
-"use client";
-
-import { useState } from "react";
-import { CampusMapPanel } from "./CampusMapPanel";
-
 type Status = "ok" | "low" | "full";
 
 type Stand = {
@@ -65,40 +60,14 @@ function AreaRow({ stand }: { stand: Stand }) {
   );
 }
 
-export function StandPanel() {
-  const [tab, setTab] = useState<"list" | "map">("list");
-
+export function StandList() {
   return (
     <div className="panel" aria-label="Live stand list">
-      <div className="tabs" role="tablist">
-        <button
-          type="button"
-          className={`tab ${tab === "list" ? "is-active" : ""}`}
-          role="tab"
-          aria-selected={tab === "list"}
-          onClick={() => setTab("list")}
-        >
-          List
-        </button>
-        <button
-          type="button"
-          className={`tab ${tab === "map" ? "is-active" : ""}`}
-          role="tab"
-          aria-selected={tab === "map"}
-          onClick={() => setTab("map")}
-        >
-          Map
-        </button>
+      <div className="panel-body">
+        {stands.map((stand) => (
+          <AreaRow key={stand.name} stand={stand} />
+        ))}
       </div>
-      {tab === "list" ? (
-        <div className="panel-body">
-          {stands.map((stand) => (
-            <AreaRow key={stand.name} stand={stand} />
-          ))}
-        </div>
-      ) : (
-        <CampusMapPanel />
-      )}
     </div>
   );
 }

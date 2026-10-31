@@ -13,21 +13,11 @@ import { Island } from './Island';
  * ground, the buildings and the orbit camera rig.
  */
 
-const EXTENT = (() => {
-  const pad = 150;
-  return {
-    minx: BOUNDS.minx - pad,
-    maxx: BOUNDS.maxx + pad,
-    minz: -BOUNDS.maxy - pad,
-    maxz: -BOUNDS.miny + pad,
-    get w() {
-      return this.maxx - this.minx;
-    },
-    get d() {
-      return this.maxz - this.minz;
-    },
-  };
-})();
+// frame the floating island, not the full bounds — tighter and symmetric
+const EXTENT = {
+  w: STYLE.island.radius * 2,
+  d: STYLE.island.radius * 2,
+};
 
 function Rig() {
   const controls = useRef<OrbitControlsImpl>(null);
@@ -36,9 +26,11 @@ function Rig() {
   const target = useMemo(() => new THREE.Vector3(CENTRE[0], 0, CENTRE[1]), []);
 
   useEffect(() => {
-    const radius = 0.5 * Math.hypot(EXTENT.w, EXTENT.d);
-    const fit = radius / Math.sin((STYLE.camera.fov * Math.PI) / 360);
-    const dist = fit * STYLE.camera.fit * (aspect < 1 ? 1.3 : 1);
+    // distance that fits the island into frame on both axes (pick the tighter)
+    const halfFov = (STYLE.camera.fov * Math.PI) / 360;
+    const vDist = EXTENT.d / 2 / Math.tan(halfFov);
+    const hDist = EXTENT.w / 2 / (aspect * Math.tan(halfFov));
+    const dist = Math.max(vDist, hDist) * STYLE.camera.fit;
     const [dx, dy, dz] = STYLE.camera.dir;
     const len = Math.hypot(dx, dy, dz);
     camera.position.set(

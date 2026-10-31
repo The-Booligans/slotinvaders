@@ -1,4 +1,5 @@
-import { StandPanel } from "@/components/StandPanel";
+import { CampusMapPanel } from "@/components/CampusMapPanel";
+import { StandList } from "@/components/StandList";
 
 const team = [
   "Dobrawa Kiefer",
@@ -73,32 +74,40 @@ export default function Page() {
       </header>
 
       <main id="top">
-        <section className="section hero">
-          <div className="container">
-            <div className="hero-grid">
-              <div className="hero-list">
-                <StandPanel />
+        <section className="hero hero--map">
+          <div className="hero-map" aria-hidden="true">
+            <CampusMapPanel />
+          </div>
+          <div className="container hero-overlay">
+            <div className="hero-copy hero-copy--card">
+              <h1>Make finding a velo spot easy.</h1>
+              <p className="lead">
+                Live counts for every bike parking area on the Endress+Hauser Reinach campus —
+                before you even leave your desk.
+              </p>
+              <div className="hero-ctas">
+                <a className="btn" href="#stands">
+                  See it live
+                </a>
+                <a className="link-cta" href="#features">
+                  Learn how →
+                </a>
               </div>
+              <div className="hero-sig">
+                <Wordmark className="" />
+                <span className="micro">BaselHack 2026 · The Booligans</span>
+              </div>
+            </div>
+          </div>
+        </section>
 
-              <div className="hero-copy">
-                <h1>Make finding a velo spot easy.</h1>
-                <p className="lead">
-                  Live counts for every bike parking area on the Endress+Hauser Reinach campus —
-                  before you even leave your desk.
-                </p>
-                <div className="hero-ctas">
-                  <a className="btn" href="#features">
-                    See it live
-                  </a>
-                  <a className="link-cta" href="#features">
-                    Learn how →
-                  </a>
-                </div>
-                <div className="hero-sig">
-                  <Wordmark className="" />
-                  <span className="micro">BaselHack 2026 · The Booligans</span>
-                </div>
-              </div>
+        <section className="section" id="stands">
+          <div className="container">
+            <span className="eyebrow">Live counts</span>
+            <h2>Every stand on the campus</h2>
+            <p className="lead">Six places to lock up a bike, updated as the day fills them.</p>
+            <div className="stands-wrap">
+              <StandList />
             </div>
           </div>
         </section>
