@@ -33,7 +33,7 @@ Content-Type: application/json
 | 403 | The device is in `maintenance` |
 | 409 | The device sends images (`mode: cloud`), has no open assignment, or its stand is retired |
 | 422 | Invalid body: a missing or negative count, more than the stand's slots, or an unknown field |
-| 429 | More than one reading from the same device within 5 s |
+| 429 | More than one reading from the same device within 2 s |
 | 503 | Cosmos DB couldn't be reached. The device simply sends again next cycle. |
 
 `occupied` and `seq` are required; `measuredAt`, `fw` and `rssi` are optional. A `seq` lower than the last one is accepted if the device has been silent longer than `staleAfterSeconds` (300 s), because it most likely restarted.
@@ -183,7 +183,7 @@ Every request writes lines like these:
 [readings 7f3c9a12] reading c0a424cb-adc4-43d6-82b0-65193b2ede7b stored in history
 [readings 7f3c9a12] <- 202 in 48 ms, 22.14 RU | thor -> kaegen-hof-1: 9 bikes, stand 21/40, 19 free
 
-WARN [readings b04e1d77] <- 429 in 9 ms, 1 RU | device thor: last reading only 2000 ms ago
+WARN [readings b04e1d77] <- 429 in 9 ms, 1 RU | device thor: last reading only 1200 ms ago
 WARN [readings c2a81f05] <- 401 in 2 ms, 0 RU | unknown key (hash sha256:28e0f7ef...)
 WARN [readings d9e3b6a0] <- 422 in 3 ms, 0 RU | device probe: occupied (44) is more than the stand's 40 slots
 ```

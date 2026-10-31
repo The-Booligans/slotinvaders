@@ -17,7 +17,7 @@ const { deviceLog: defaultDeviceLog } = require("./device-log");
 //   4. appends the reading to "readings" (history, kept 30 days),
 // and logs every step, so the Function's log shows exactly what happened.
 
-const RATE_LIMIT_MS = 5_000; // at most one request per device every 5 s
+const RATE_LIMIT_MS = 2_000; // at most one request per device every 2 s (devices may report every 5 s)
 const MAX_STATE_ATTEMPTS = 5; // retries when two devices of an area write at the same time
 
 // The readings handler needs more than http.js's generic logger: every line
@@ -232,7 +232,7 @@ function createReadingsHandler({
             log.step(`seq ${reading.seq} <= last seq ${previous.seq}, but the last reading is ${Math.round(sinceMs / 1000)} s old: treating it as a device restart`);
           } else if (sinceMs < RATE_LIMIT_MS) {
             return finish(
-              reply(429, { error: "too many requests, wait 5 s between readings" }, { "Retry-After": "5" }),
+              reply(429, { error: "too many requests, wait 2 s between readings" }, { "Retry-After": "2" }),
               `device ${device.deviceId}: last reading only ${sinceMs} ms ago`
             );
           }

@@ -140,12 +140,12 @@ Keeps the latest frame per device in backend memory (not Cosmos). Served back by
 Every sketch has a `start.sh` that compiles, uploads and opens the serial monitor. Pass a port, or let it use the default `/dev/cu.usbmodem1101`:
 
 ```sh
-cd mule && ./start.sh                        # default port
-cd thor && ./start.sh /dev/cu.usbmodem101    # explicit port
-cd mule && ./start.sh --compile-only         # when another device holds the port
+cd hydra && ./start.sh                       # default port
+cd thor  && ./start.sh /dev/cu.usbmodem101   # explicit port
+cd mule  && ./start.sh                       # ESP-IDF build, see below
 ```
 
-Requires `arduino-cli` and the ESP32 core (`esp32:esp32:esp32s3` for the AtomS3R-CAM-M12, `esp32:esp32:m5stack_atoms3` for the plain AtomS3).
+`hydra` and `thor` use `arduino-cli` with the ESP32 core (`esp32:esp32:esp32s3` for the AtomS3R-CAM-M12, `esp32:esp32:m5stack_atoms3` for the plain AtomS3). `mule` uses **ESP-IDF 5.3+** — source `$IDF_PATH/export.sh` first so `idf.py` is on PATH; see [`mule/README.md`](mule/README.md) for the full toolchain notes.
 
 ## When something looks wrong
 
