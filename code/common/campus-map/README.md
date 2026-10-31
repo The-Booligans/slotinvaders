@@ -58,6 +58,17 @@ load it via `next/dynamic` with `ssr: false`.
 | `glbUrl`    | `string`            | `/campus.glb`   | URL the browser fetches the baked campus from         |
 | `style`     | `React.CSSProperties` | —             | inline style for the wrapper; pass `height` to size   |
 | `className` | `string`            | —               | class for the wrapper                                 |
+| `markers`   | `CampusMarker[]`    | —               | pins over campus positions (`x` east, `y` north, m); `variant: 'user'` draws a "you are here" dot |
+| `selectedMarkerId` | `string \| null` | —           | highlighted pin; the camera glides to it on change    |
+| `onMarkerSelect` | `(id) => void` | —               | called when a pin is tapped                           |
+| `recenterKey` | `number`          | —               | change it to glide back to the initial view           |
+
+Pins are plain DOM over the canvas: `MarkerProjector` (inside the Canvas)
+writes each pin's screen position every frame, so no React re-render per frame.
+
+The stand positions are exported as `STANDS`. Import them from
+`@slotinvaders/campus-map/data` to avoid pulling three.js into non-3D code
+(e.g. tests).
 
 ## How it works
 
@@ -98,8 +109,9 @@ src/
 ├── Scene.tsx                  lights, buildings, island, camera rig
 ├── Buildings.tsx              GLB loader, roof-vs-wall shading, E+H paint
 ├── Island.tsx                 hex ground, checker grass, roads, trees
+├── Markers.tsx                DOM pins over the canvas + per-frame projector
 ├── geometry.ts                flat polygon + ribbon helpers; disc clipping
-├── campus-data.ts             typed re-export of campus.json
+├── campus-data.ts             typed re-export of campus.json (incl. STANDS)
 ├── campus.json                roads, areas, property zones (~48 KB)
 ├── style.ts                   every colour and camera number
 └── index.ts                   public exports

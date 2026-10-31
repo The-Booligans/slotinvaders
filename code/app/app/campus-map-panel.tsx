@@ -1,6 +1,7 @@
 "use client";
 
 import dynamic from "next/dynamic";
+import type { SlotInvadersCampusMapProps } from "@slotinvaders/campus-map";
 
 // three.js needs `window`, so keep it out of the static prerender
 const SlotInvadersCampusMap = dynamic(
@@ -13,10 +14,10 @@ const SlotInvadersCampusMap = dynamic(
   },
 );
 
-export function CampusMapPanel() {
+export function CampusMapPanel(props: SlotInvadersCampusMapProps) {
   return (
-    <div className="h-full w-full">
-      <SlotInvadersCampusMap />
+    <div className="h-full w-full overflow-hidden">
+      <SlotInvadersCampusMap {...props} />
     </div>
   );
 }
