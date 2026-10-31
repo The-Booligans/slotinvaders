@@ -47,9 +47,7 @@ describe("DeviceImage", () => {
     expect(img.src).toBe("https://example.test/frame.jpg");
     expect(screen.getByText("#123")).toBeDefined();
     expect(screen.getByText("87.0%")).toBeDefined();
-    const download = screen.getByLabelText(
-      "Download frame #123 from cam-01",
-    ) as HTMLAnchorElement;
+    const download = screen.getByLabelText("Download frame #123 from cam-01") as HTMLAnchorElement;
     expect(download.href).toBe("https://example.test/frame.jpg");
     expect(download.getAttribute("download")).toBe("cam-01-123.jpg");
   });
@@ -74,9 +72,7 @@ describe("DeviceImage", () => {
         }}
       />,
     );
-    const download = screen.getByLabelText(
-      "Download frame #7 from cam-01",
-    ) as HTMLAnchorElement;
+    const download = screen.getByLabelText("Download frame #7 from cam-01") as HTMLAnchorElement;
     expect(download.getAttribute("download")).toBe("cam-01-7.svg");
   });
 });
