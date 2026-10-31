@@ -23,7 +23,10 @@ const EXTENT = {
 };
 
 interface RigProps {
-  /** scene-space (metres) offset for the orbit target; shifts what the camera looks at */
+  /** Visual nudge of the island inside the viewport, in scene metres at the
+   *  target depth. Positive X moves the island left; negative X moves it right.
+   *  Implemented via `camera.setViewOffset`, so the orbit pivot stays on the
+   *  island centre. */
   offset?: [number, number];
   /** campus point (x east, y north) to glide to; null keeps the current view */
   focus?: [number, number] | null;
@@ -56,17 +59,34 @@ function Rig({ offset = [0, 0], focus, recenterKey }: RigProps) {
   const aspect = size.width / size.height;
   const [ox, oz] = offset;
   const target = useMemo(
-    () => new THREE.Vector3(CENTRE[0] + ox, 0, CENTRE[1] + oz),
-    [ox, oz],
+    () => new THREE.Vector3(CENTRE[0], 0, CENTRE[1]),
+    [],
   );
 
   useEffect(() => {
     camera.position.copy(homePosition(target, aspect));
-    (camera as THREE.PerspectiveCamera).fov = STYLE.camera.fov;
+    const perspCam = camera as THREE.PerspectiveCamera;
+    perspCam.fov = STYLE.camera.fov;
+    if (ox !== 0 || oz !== 0) {
+      // metres at the target depth → pixels in the current viewport
+      const dist = camera.position.distanceTo(target);
+      const halfFov = (STYLE.camera.fov * Math.PI) / 360;
+      const pxPerMetre = size.height / (2 * dist * Math.tan(halfFov));
+      perspCam.setViewOffset(
+        size.width,
+        size.height,
+        ox * pxPerMetre,
+        -oz * pxPerMetre,
+        size.width,
+        size.height,
+      );
+    } else {
+      perspCam.clearViewOffset();
+    }
     camera.updateProjectionMatrix();
     controls.current?.target.copy(target);
     controls.current?.update();
-  }, [camera, aspect, target]);
+  }, [camera, aspect, target, ox, oz, size.width, size.height]);
 
   const isFirstRecenter = useRef(true);
   useEffect(() => {
