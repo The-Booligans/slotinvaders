@@ -6,6 +6,7 @@ import {
   formatAge,
   formatDistance,
   hasData,
+  occupancyLabel,
   occupancyPercent,
   spotColor,
   walkingMinutes,
@@ -130,7 +131,7 @@ function RackCard({
           {reported ? `${percent}%` : "–"}
         </span>
         <span className="text-sm font-medium text-slate-600">
-          {reported ? `busy · ${spot.occupied} bikes` : "no data yet"}
+          {reported ? occupancyLabel(percent) : "no data yet"}
         </span>
       </p>
       <div

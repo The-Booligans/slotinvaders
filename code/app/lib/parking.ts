@@ -103,6 +103,16 @@ export function occupancyLevel(percent: number): OccupancyLevel {
   return "free";
 }
 
+/** How busy an area feels, in words: "All free" … "Full". Finer than the colour levels. */
+export function occupancyLabel(percent: number): string {
+  if (percent >= 100) return "Full";
+  if (percent >= 85) return "Almost full";
+  if (percent >= 60) return "Busy";
+  if (percent >= 30) return "A bit busy";
+  if (percent > 0) return "Mostly free";
+  return "All free";
+}
+
 export const LEVEL_COLOR: Record<OccupancyLevel, string> = {
   free: "#16a34a",
   busy: "#d97706",

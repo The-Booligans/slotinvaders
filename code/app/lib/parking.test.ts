@@ -6,6 +6,7 @@ import {
   groupByArea,
   NO_DATA_COLOR,
   LEVEL_COLOR,
+  occupancyLabel,
   occupancyLevel,
   occupancyPercent,
   spotColor,
@@ -119,6 +120,21 @@ describe("occupancyLevel", () => {
     [100, "full"],
   ] as const)("%i%% is %s", (percent, level) => {
     expect(occupancyLevel(percent)).toBe(level);
+  });
+});
+
+describe("occupancyLabel", () => {
+  it.each([
+    [0, "All free"],
+    [1, "Mostly free"],
+    [29, "Mostly free"],
+    [30, "A bit busy"],
+    [60, "Busy"],
+    [85, "Almost full"],
+    [100, "Full"],
+    [125, "Full"],
+  ] as const)("%i%% reads %s", (percent, label) => {
+    expect(occupancyLabel(percent)).toBe(label);
   });
 });
 
