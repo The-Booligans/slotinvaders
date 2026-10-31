@@ -26,6 +26,7 @@ export function AppShell() {
   const spots = useMemo(() => toParkingSpots(message?.stands ?? [], userPosition), [message, userPosition]);
   const [tab, setTab] = useState<Tab>("map");
   const [selectedId, setSelectedId] = useState<string | null>(null);
+  const [expandedId, setExpandedId] = useState<string | null>(null);
   const [recenterKey, setRecenterKey] = useState(0);
 
   const markers = useMemo<CampusMarker[]>(
@@ -61,6 +62,13 @@ export function AppShell() {
     setSelectedId(id);
     setTab("map");
   };
+
+  const showPhoto = (id: string) => {
+    setExpandedId(id);
+    setTab("list");
+  };
+
+  const toggleExpanded = (id: string) => setExpandedId((cur) => (cur === id ? null : id));
 
   return (
     <div className="flex h-dvh w-full flex-col bg-slate-50 font-sans">
@@ -99,11 +107,19 @@ export function AppShell() {
               status={status}
               selectedId={selectedId}
               onSelect={setSelectedId}
+              onShowPhoto={showPhoto}
             />
           </div>
         </div>
         {tab === "list" && (
-          <RacksList spots={spots} at={message?.at ?? null} status={status} onSelect={showOnMap} />
+          <RacksList
+            spots={spots}
+            at={message?.at ?? null}
+            status={status}
+            expandedId={expandedId}
+            onToggle={toggleExpanded}
+            onShowOnMap={showOnMap}
+          />
         )}
         {tab === "profile" && <ProfileView />}
       </main>
