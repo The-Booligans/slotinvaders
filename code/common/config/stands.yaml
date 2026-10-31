@@ -59,7 +59,7 @@ stands:
 
 devices:
   # Kägenstrasse Hof — ToF covers the near row, LiDAR sweeps the far one.
-  - id: scv
+  - id: thor
     stand: kaegen-hof-1
     hardware: vl53l5cx-array
     mode: device
