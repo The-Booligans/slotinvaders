@@ -14,7 +14,10 @@ const snapshot = {
 };
 
 function mockFetch(body: unknown, { ok = true, status = 200 } = {}) {
-  const fn = vi.fn(async () => ({ ok, status, json: async () => body }) as Response);
+  const fn = vi.fn(
+    async (_input: string, _init?: RequestInit) =>
+      ({ ok, status, json: async () => body }) as Response,
+  );
   vi.stubGlobal("fetch", fn);
   return fn;
 }
