@@ -76,7 +76,7 @@ export default function Page() {
       <main id="top">
         <section className="hero hero--map">
           <div className="hero-map" aria-hidden="true">
-            <CampusMapPanel />
+            <CampusMapPanel heroDesktop />
           </div>
           <div className="container hero-overlay">
             <div className="hero-copy hero-copy--card">

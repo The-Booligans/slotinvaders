@@ -1,16 +1,17 @@
 import { Suspense, useEffect, useMemo, useRef } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
-import { OrbitControls, Sky } from '@react-three/drei';
+import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
 import type { OrbitControls as OrbitControlsImpl } from 'three-stdlib';
-import { BOUNDS, CENTRE } from './campus-data';
+import { CENTRE } from './campus-data';
 import { STYLE } from './style';
 import { Buildings } from './Buildings';
 import { Island } from './Island';
 
 /**
- * Everything that lives inside the Canvas: lights, the sky dome, the island
- * ground, the buildings and the orbit camera rig.
+ * Everything that lives inside the Canvas: lights, the island ground, the
+ * buildings and the orbit camera rig. The sky is a flat background colour —
+ * no atmospheric scattering, which washed the horizon toward white.
  */
 
 // frame the floating island, not the full bounds — tighter and symmetric
@@ -19,11 +20,20 @@ const EXTENT = {
   d: STYLE.island.radius * 2,
 };
 
-function Rig() {
+interface RigProps {
+  /** scene-space (metres) offset for the orbit target; shifts what the camera looks at */
+  offset?: [number, number];
+}
+
+function Rig({ offset = [0, 0] }: RigProps) {
   const controls = useRef<OrbitControlsImpl>(null);
   const { camera, size } = useThree();
   const aspect = size.width / size.height;
-  const target = useMemo(() => new THREE.Vector3(CENTRE[0], 0, CENTRE[1]), []);
+  const [ox, oz] = offset;
+  const target = useMemo(
+    () => new THREE.Vector3(CENTRE[0] + ox, 0, CENTRE[1] + oz),
+    [ox, oz],
+  );
 
   useEffect(() => {
     // distance that fits the island into frame on both axes (pick the tighter)
@@ -60,11 +70,16 @@ function Rig() {
   );
 }
 
-export function Scene({ glbUrl }: { glbUrl: string }) {
+export interface SceneProps {
+  glbUrl: string;
+  /** metres to shift the orbit target; use to compose the island off-centre */
+  offset?: [number, number];
+}
+
+export function Scene({ glbUrl, offset }: SceneProps) {
   return (
     <>
       <color attach="background" args={[STYLE.sky]} />
-      <Sky sunPosition={[120, 90, 60]} turbidity={3} rayleigh={0.4} />
 
       <hemisphereLight args={STYLE.hemi} />
       <ambientLight intensity={STYLE.ambient} />
@@ -94,7 +109,7 @@ export function Scene({ glbUrl }: { glbUrl: string }) {
         <Buildings glbUrl={glbUrl} />
       </Suspense>
 
-      <Rig />
+      <Rig offset={offset} />
     </>
   );
 }

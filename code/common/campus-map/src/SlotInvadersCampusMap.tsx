@@ -7,6 +7,8 @@ import { Scene } from './Scene';
 export interface SlotInvadersCampusMapProps {
   /** URL to the campus.glb — defaults to a sibling at the site root. */
   glbUrl?: string;
+  /** Metres to shift the orbit target so the island reads off-centre. */
+  offset?: [number, number];
   /** Inline style for the outer wrapper; pass height to size the canvas. */
   style?: CSSProperties;
   className?: string;
@@ -19,6 +21,7 @@ export interface SlotInvadersCampusMapProps {
  */
 export function SlotInvadersCampusMap({
   glbUrl = '/campus.glb',
+  offset,
   style,
   className,
 }: SlotInvadersCampusMapProps) {
@@ -30,7 +33,7 @@ export function SlotInvadersCampusMap({
         camera={{ fov: 36, near: 1, far: 4000 }}
         gl={{ antialias: true }}
       >
-        <Scene glbUrl={glbUrl} />
+        <Scene glbUrl={glbUrl} offset={offset} />
       </Canvas>
     </div>
   );
