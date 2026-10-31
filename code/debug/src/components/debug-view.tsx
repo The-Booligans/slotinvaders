@@ -167,7 +167,7 @@ function AllDevices({ devices, loading }: { devices: DebugDeviceSummary[]; loadi
     return (
       <div className="rounded-md border border-dashed p-8 text-center text-sm text-[var(--color-muted-foreground)]">
         No devices known to the backend yet. Add one in{" "}
-        <code className="font-mono">config/stands.yaml</code> and redeploy.
+        <code className="font-mono">code/backend/velo-stands-cosmos/stands.yaml</code> and redeploy.
       </div>
     );
   }

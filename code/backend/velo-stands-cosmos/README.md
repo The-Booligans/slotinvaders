@@ -52,7 +52,7 @@ That creates a serverless account in `nag-rg-slotinvaders` in subscription `1bd6
 | `-PeriodicBackup` | `--periodic-backup` | off | Use this if the region refuses continuous backup |
 | `-NoKeys` | `--no-keys` | off | Turns off account keys, so only Entra ID identities get in |
 
-To check a stands file without writing anything, run `npm install` and then `node sync-catalog.mjs config/stands.yaml --dry-run`.
+To check a stands file without writing anything, run `npm install` and then `node sync-catalog.mjs stands.yaml --dry-run`.
 
 ## Cheapest settings
 

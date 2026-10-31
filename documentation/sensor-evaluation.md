@@ -110,7 +110,7 @@ Status legend: ⬜ not started · 🧪 testing · ✅ passed · ❌ ruled out
 - **Why last:** the image leaves the device, even if transiently. Everything
   above tries to avoid that.
 - **Status:** code path exists in [`architecture.md`](architecture.md); engaged
-  per-stand via `mode: cloud` in `config/stands.yaml`.
+  per-stand via `mode: cloud` in `code/backend/velo-stands-cosmos/stands.yaml`.
 
 ## Results
 
@@ -134,8 +134,9 @@ Per stand, in order:
    bar for that stand's size and layout.
 2. If none clears the bar before the demo, mark the stand `mode: cloud` and
    deploy an ESP32-CAM as the plan-B fallback.
-3. Record the choice and the measured numbers in `config/stands.yaml` as a
-   comment next to the device.
+3. Record the choice and the measured numbers in
+   `code/backend/velo-stands-cosmos/stands.yaml` as a comment next to the
+   device.
 
 The bar is set deliberately low for the demo (a single wrong count in a
 60-second cycle self-corrects on the next read), but we record the real number

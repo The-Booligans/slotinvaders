@@ -47,7 +47,7 @@ cp secrets.example.h secrets.h
 #define DEVICE_API_KEY "vs_…"           // from code/backend/device-keys.secret.yaml
 ```
 
-The hash in [`code/common/config/stands.yaml`](../../common/config/stands.yaml)
+The hash in [`code/backend/velo-stands-cosmos/stands.yaml`](../../backend/velo-stands-cosmos/stands.yaml)
 under `devices` → `id: mule` must match the SHA-256 of the key you flash.
 
 ## Runtime knobs

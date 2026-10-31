@@ -46,7 +46,7 @@ flowchart LR
     DF["Fallback device<br/>cropped image upload<br/>(only where plan A fails)"]
     S["Simulator<br/>same API, sim keys"]
   end
-  C[("config/stands.yaml<br/>areas · stands · devices")]
+  C[("velo-stands-cosmos/stands.yaml<br/>areas · stands · devices")]
   subgraph Azure
     F["Azure Functions<br/>POST /v1/readings<br/>POST /v1/images (fallback)<br/>GET /v1/device/config<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
     V["AI Vision<br/>(fallback only)"]
@@ -76,7 +76,7 @@ flowchart LR
 | Devices (plan A) | ToF arrays, LiDAR (e.g. RPLidar C1), mmWave radar, ultrasonic arrays, on-device CV on ESP32-S3 — one per stand or several | Count locally, every 60 s or on change, and send only the integer. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
 | Devices (plan B, fallback) | ESP32-CAM / ESP32-S3-CAM | Send a cropped JPEG for cloud counting. Used only where no plan-A sensor configuration proves out. |
 | Sensor evaluation | `code/firmware/experiments/*` + `documentation/sensor-evaluation.md` | For each candidate sensor: wiring, firmware spike, bench + on-site accuracy, false-positive rate, cost, power, mounting constraints. The results pick what we deploy. |
-| Config | `config/stands.yaml` | The single source of truth for areas, stands and devices. CI validates it. The build copies it into the Function App, and copies a public subset (without hashes) into the front ends. |
+| Config | `code/backend/velo-stands-cosmos/stands.yaml` | The single source of truth for areas, stands and devices. CI validates it. The build copies it into the Function App, and copies a public subset (without hashes) into the front ends. |
 | API | Azure Functions, Node 22, TypeScript | Authenticates devices, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. The `/v1/images` endpoint is only used by fallback devices. |
 | Recognition (fallback) | Azure AI Vision, Image Analysis object detection | Counts the boxes labelled `bicycle` above a confidence threshold set in the config. Only engaged for stands flagged as plan B in the config. |
 | Database | Cosmos DB for NoSQL, serverless | Holds the latest state per area, plus raw readings with a TTL for history. |
@@ -143,7 +143,7 @@ A client calls `/negotiate` and opens the WebSocket. Web PubSub tells the Functi
 Areas are the six real bike parking areas on the campus. A stand belongs to an area and has slots, and each device belongs to a stand. An area's free and total places are the sums over its stands.
 
 ```yaml
-# config/stands.yaml
+# code/backend/velo-stands-cosmos/stands.yaml
 version: 1
 site:
   id: reinach
