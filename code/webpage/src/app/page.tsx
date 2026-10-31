@@ -176,6 +176,29 @@ export default function Page() {
                   </svg>
                   App Store
                 </button>
+                <a
+                  className="btn btn--store"
+                  href="/Slot_Invaders_v1.2.apk"
+                  download
+                  title="Direct Android APK download"
+                >
+                  <svg
+                    className="btn-icon"
+                    viewBox="0 0 24 24"
+                    fill="none"
+                    stroke="currentColor"
+                    strokeWidth="1.7"
+                    strokeLinecap="round"
+                    strokeLinejoin="round"
+                    aria-hidden="true"
+                    focusable="false"
+                  >
+                    <path d="M12 3v12" />
+                    <path d="m7 10 5 5 5-5" />
+                    <path d="M5 21h14" />
+                  </svg>
+                  APK
+                </a>
               </div>
               <a className="link-cta hero-learn" href="#features">
                 Learn how →
