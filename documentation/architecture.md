@@ -420,3 +420,7 @@ These rules live in one pure function, `computeViews(config, states, now)`, in `
 
 **Volume.** Ten devices reporting once a minute make about 14,000 readings a day, which costs a few cents in serverless request units. Image recognition is the larger cost, at roughly a franc per thousand images, so cloud-mode devices may want to report less often.
 
+
+## App prototype: mocked rack data
+
+Until the API exists, the app's home page shows a single rack (near Memox, Basel SBB) from `code/app/lib/rack.ts`. `fetchRack()` returns mock data and is the only place to swap in the real `GET /v1/state` call; `occupancy()` and `busyLevel()` are covered by `pnpm test` (Vitest).
