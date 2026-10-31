@@ -1,12 +1,13 @@
 "use client";
 
 import { useEffect, useRef } from "react";
+import type { LiveStatus } from "@/lib/live-stands";
 import {
-  LEVEL_COLOR,
+  formatAge,
   formatDistance,
-  kindLabel,
-  occupancyLevel,
+  hasData,
   occupancyPercent,
+  spotColor,
   walkingMinutes,
   type ParkingSpot,
 } from "@/lib/parking";
@@ -14,6 +15,9 @@ import { BikeIcon, WalkIcon } from "./icons";
 
 interface NearbyRacksProps {
   spots: ParkingSpot[];
+  /** server time of the data, for "updated 2 min ago" */
+  at: string | null;
+  status: LiveStatus;
   selectedId: string | null;
   onSelect: (id: string) => void;
 }
@@ -21,7 +25,7 @@ interface NearbyRacksProps {
 // wait for scrolling to settle before picking the centred card
 const SCROLL_SETTLE_MS = 120;
 
-export function NearbyRacks({ spots, selectedId, onSelect }: NearbyRacksProps) {
+export function NearbyRacks({ spots, at, status, selectedId, onSelect }: NearbyRacksProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -45,6 +49,11 @@ export function NearbyRacks({ spots, selectedId, onSelect }: NearbyRacksProps) {
       <h2 className="mx-auto mb-2 w-fit rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm backdrop-blur">
         Nearby racks
       </h2>
+      {spots.length === 0 && (
+        <p className="mx-auto mb-3 w-fit rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow-sm">
+          {status === "offline" ? "Can’t reach the server, retrying…" : "Waiting for live data…"}
+        </p>
+      )}
       <ul
         ref={listRef}
         onScroll={handleScroll}
@@ -54,6 +63,7 @@ export function NearbyRacks({ spots, selectedId, onSelect }: NearbyRacksProps) {
           <li key={spot.id} data-id={spot.id} className="w-3/4 max-w-xs shrink-0 snap-center">
             <RackCard
               spot={spot}
+              at={at}
               selected={spot.id === selectedId}
               onClick={() => onSelect(spot.id)}
             />
@@ -78,15 +88,18 @@ function centredCardId(list: HTMLUListElement | null): string | undefined {
 
 function RackCard({
   spot,
+  at,
   selected,
   onClick,
 }: {
   spot: ParkingSpot;
+  at: string | null;
   selected: boolean;
   onClick: () => void;
 }) {
-  const percent = occupancyPercent(spot);
-  const color = LEVEL_COLOR[occupancyLevel(percent)];
+  const reported = hasData(spot);
+  const percent = reported ? occupancyPercent(spot) : 0;
+  const color = spotColor(spot);
 
   return (
     <button
@@ -100,8 +113,8 @@ function RackCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate font-semibold text-slate-900">{spot.name}</h3>
-          <p className="text-xs text-slate-500">
-            {kindLabel(spot.kind)} · {spot.capacity} slots
+          <p className="truncate text-xs text-slate-500">
+            {spot.standLabel} · {spot.capacity} slots
           </p>
         </div>
         <span
@@ -114,9 +127,11 @@ function RackCard({
 
       <p className="mt-3 flex items-baseline gap-1.5">
         <span className="text-3xl font-bold tabular-nums" style={{ color }}>
-          {percent}%
+          {reported ? `${percent}%` : "–"}
         </span>
-        <span className="text-sm font-medium text-slate-600">busy</span>
+        <span className="text-sm font-medium text-slate-600">
+          {reported ? `busy · ${spot.occupied} bikes` : "no data yet"}
+        </span>
       </p>
       <div
         className="mt-2 h-1.5 overflow-hidden rounded-full bg-slate-100"
@@ -130,13 +145,29 @@ function RackCard({
 
       <div className="mt-3 flex items-center justify-between text-xs text-slate-600">
         <span className="font-medium tabular-nums text-slate-900">
-          {spot.free === 0 ? "No free slots" : `${spot.free} free`}
+          {!reported ? `${spot.capacity} slots` : spot.free === 0 ? "No free slots" : `${spot.free} free`}
         </span>
-        <span className="flex items-center gap-1">
-          <WalkIcon className="size-3.5" />
-          {formatDistance(spot.distanceM)} · {walkingMinutes(spot.distanceM)} min
-        </span>
+        {spot.distanceM === null ? (
+          <span>Not on the map yet</span>
+        ) : (
+          <span className="flex items-center gap-1">
+            <WalkIcon className="size-3.5" />
+            {formatDistance(spot.distanceM)} · {walkingMinutes(spot.distanceM)} min
+          </span>
+        )}
       </div>
+
+      <Freshness spot={spot} at={at} />
     </button>
   );
+}
+
+function Freshness({ spot, at }: { spot: ParkingSpot; at: string | null }) {
+  const age = spot.updatedAt && at ? formatAge(spot.updatedAt, at) : null;
+  const [text, tone] = !spot.updatedAt
+    ? ["No sensor data yet", "text-slate-400"]
+    : spot.stale
+      ? [`Some sensors offline · updated ${age}`, "text-amber-600"]
+      : [`Updated ${age}`, "text-emerald-600"];
+  return <p className={`mt-2 truncate text-[11px] font-medium ${tone}`}>{text}</p>;
 }

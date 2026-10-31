@@ -2,37 +2,39 @@
 
 import { useMemo, useState } from "react";
 import type { CampusMarker } from "@slotinvaders/campus-map";
-import {
-  LEVEL_COLOR,
-  MOCK_USER_POSITION,
-  nearbySpots,
-  occupancyLevel,
-  occupancyPercent,
-} from "@/lib/parking";
+import { MOCK_USER_POSITION, hasData, spotColor, toParkingSpots, totalFree } from "@/lib/parking";
 import { CampusMapPanel } from "./campus-map-panel";
 import { AppHeader } from "./components/app-header";
 import { BottomNav, type Tab } from "./components/bottom-nav";
 import { RecenterIcon } from "./components/icons";
 import { NearbyRacks } from "./components/nearby-racks";
 import { ProfileView } from "./components/profile-view";
+import { useLiveStands } from "./use-live-stands";
 
 export function AppShell() {
-  const spots = useMemo(() => nearbySpots(), []);
+  const { status, message } = useLiveStands();
+  const spots = useMemo(() => toParkingSpots(message?.stands ?? []), [message]);
   const [tab, setTab] = useState<Tab>("map");
-  const [selectedId, setSelectedId] = useState<string | null>(spots[0]?.id ?? null);
+  const [selectedId, setSelectedId] = useState<string | null>(null);
   const [recenterKey, setRecenterKey] = useState(0);
 
   const markers = useMemo<CampusMarker[]>(
     () => [
       { id: "you", x: MOCK_USER_POSITION[0], y: MOCK_USER_POSITION[1], variant: "user" },
-      ...spots.map((s) => ({
-        id: s.id,
-        x: s.x,
-        y: s.y,
-        badge: String(s.free),
-        label: s.name,
-        color: LEVEL_COLOR[occupancyLevel(occupancyPercent(s))],
-      })),
+      ...spots.flatMap((s) =>
+        s.position
+          ? [
+              {
+                id: s.id,
+                x: s.position[0],
+                y: s.position[1],
+                badge: hasData(s) ? String(s.free) : "?",
+                label: s.name,
+                color: spotColor(s),
+              },
+            ]
+          : [],
+      ),
     ],
     [spots],
   );
@@ -44,7 +46,7 @@ export function AppShell() {
 
   return (
     <div className="flex h-dvh w-full flex-col bg-slate-50 font-sans">
-      <AppHeader freeTotal={spots.reduce((sum, s) => sum + s.free, 0)} />
+      <AppHeader freeTotal={totalFree(spots)} status={status} />
 
       <main className="relative min-h-0 flex-1">
         {/* keep the map mounted so the WebGL scene isn't rebuilt on tab switches */}
@@ -64,7 +66,13 @@ export function AppShell() {
             <RecenterIcon className="size-6" />
           </button>
           <div className="absolute inset-x-0 bottom-0 z-30">
-            <NearbyRacks spots={spots} selectedId={selectedId} onSelect={setSelectedId} />
+            <NearbyRacks
+              spots={spots}
+              at={message?.at ?? null}
+              status={status}
+              selectedId={selectedId}
+              onSelect={setSelectedId}
+            />
           </div>
         </div>
         {tab === "profile" && <ProfileView />}

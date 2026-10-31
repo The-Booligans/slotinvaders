@@ -74,6 +74,19 @@ function standView({ stand, catalog, devices, now }) {
   };
 }
 
+/** Every active stand, sorted by area and id, with its view and the numbers behind it. */
+function standEntries({ catalog, byArea, now }) {
+  return [...catalog.stands.values()]
+    .filter((s) => !s.retiredAt)
+    .sort((a, b) => a.areaId.localeCompare(b.areaId) || a.standId.localeCompare(b.standId))
+    .map((stand) => ({ stand, ...standView({ stand, catalog, devices: byArea.get(stand.areaId) ?? {}, now }) }));
+}
+
+/** The body of GET /api/v1/stands, also pushed over Web PubSub. */
+function standsSnapshot({ catalog, byArea, now }) {
+  return { at: now.toISOString(), stands: standEntries({ catalog, byArea, now }).map((e) => e.view) };
+}
+
 /**
  * @param {object} deps
  * @param {{ get: () => Promise<{catalog: any, ageMs: number, reloaded: boolean}> }} deps.catalogCache
@@ -129,10 +142,11 @@ function createStandsHandler({ catalogCache, stateCache, now = () => new Date(),
       log.step(`state from cache (${(stateLookup.ageMs / 1000).toFixed(1)} s old)`);
     }
 
-    let stands = [...catalog.stands.values()].filter((s) => !s.retiredAt);
+    const at = now();
+    let entries = standEntries({ catalog, byArea: snapshot.byArea, now: at });
     if (standId) {
-      stands = stands.filter((s) => s.standId === standId);
-      if (!stands.length) {
+      entries = entries.filter((e) => e.stand.standId === standId);
+      if (!entries.length) {
         return finish(reply(404, { error: `unknown stand "${standId}"` }, { "Access-Control-Allow-Origin": "*" }), `unknown stand ${standId}`);
       }
     }
@@ -140,13 +154,10 @@ function createStandsHandler({ catalogCache, stateCache, now = () => new Date(),
       if (!catalog.areas.has(areaId)) {
         return finish(reply(404, { error: `unknown area "${areaId}"` }, { "Access-Control-Allow-Origin": "*" }), `unknown area ${areaId}`);
       }
-      stands = stands.filter((s) => s.areaId === areaId);
+      entries = entries.filter((e) => e.stand.areaId === areaId);
     }
-    stands.sort((a, b) => a.areaId.localeCompare(b.areaId) || a.standId.localeCompare(b.standId));
 
-    const at = now();
-    const views = stands.map((stand) => {
-      const { result, stale, view } = standView({ stand, catalog, devices: snapshot.byArea.get(stand.areaId) ?? {}, now: at });
+    const views = entries.map(({ stand, result, stale, view }) => {
       const reasons = [
         ...(view.stale && !result.parts.length ? ["no devices assigned"] : []),
         ...result.missing.map((d) => `${d} never reported`),
@@ -158,7 +169,6 @@ function createStandsHandler({ catalogCache, stateCache, now = () => new Date(),
       );
       return view;
     });
-
     if (standId) {
       const v = views[0];
       return finish(reply(200, v, publicHeaders), `${v.id}: ${v.currentOccupancy}/${v.maxOccupancy}, ${v.free} free${v.stale ? ", stale" : ""}`);
@@ -171,4 +181,4 @@ function createStandsHandler({ catalogCache, stateCache, now = () => new Date(),
   };
 }
 
-module.exports = { createStateCache, createStandsHandler, standView };
+module.exports = { createStateCache, createStandsHandler, standView, standEntries, standsSnapshot };
