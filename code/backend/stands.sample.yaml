@@ -1,0 +1,67 @@
+# Velo Stands – areas, stands, devices and which device watches which stand.
+#
+# Same layout as config/stands.yaml in the architecture, plus:
+#   stands[]      name, location, locationNote, retiredAt
+#   devices[]     name, serial, status
+#   assignments[] device -> stand, from / to  (replaces devices[].stand,
+#                 which is still accepted as a short form)
+#
+# Load it with:  node sync-catalog.mjs stands.sample.yaml   (add --dry-run to only check it)
+# The coordinates and the location note are placeholders.
+
+version: 1
+site:
+  id: reinach
+  name: Endress+Hauser Reinach
+  timezone: Europe/Zurich
+
+areas:
+  - id: flow-sw
+    name: Flow South West
+    kind: covered                # covered | inside | open
+  # … flow-main, sternenhof, flow-garage-south, flow-se, flow-garage-north
+
+stands:
+  - id: fsw-1
+    area: flow-sw
+    name: Flow South West – Stand 1
+    slots: 20                    # maximum capacity
+    location: { lat: 47.4950, lon: 7.5900 }      # placeholder, use the real GPS position
+    locationNote: Covered, next to the south-west entrance   # placeholder
+    # retiredAt: 2027-06-30      # set instead of deleting a stand
+
+devices:
+  - id: cam-01
+    name: FSW-1 left half
+    hardware: esp32-cam
+    mode: device                 # device: sends a count · cloud: sends an image
+    keyHash: "sha256:replace-with-hash-of-cam-01"
+    status: active               # active | maintenance | retired
+  - id: cam-02
+    name: FSW-1 right half
+    hardware: esp32-s3-cam
+    mode: cloud
+    keyHash: "sha256:replace-with-hash-of-cam-02"
+    status: active
+
+assignments:
+  - { device: cam-01, stand: fsw-1, from: 2026-10-31 }
+  - { device: cam-02, stand: fsw-1, from: 2026-10-31 }
+
+# Replacing a broken device (new device, new id, new key):
+#   devices:
+#     - id: cam-01 … status: retired
+#     - id: cam-03 … status: active
+#   assignments:
+#     - { device: cam-01, stand: fsw-1, from: 2026-10-31, to: 2027-03-14 }
+#     - { device: cam-03, stand: fsw-1, from: 2027-03-14 }
+# Then run the sync again. It also removes cam-01 from the stand's live state.
+
+recognition:
+  model: azure-ai-vision
+  label: bicycle
+  minConfidence: 0.5
+
+settings:
+  staleAfterSeconds: 300
+  readingTtlDays: 30             # keep equal to readingTtlDays in cosmos.bicep
