@@ -223,15 +223,19 @@ if (-not $SkipCode) {
         Select-String -SimpleMatch -Pattern '<<<<<<<', '=======', '>>>>>>>' -List |
         ForEach-Object { $_.Path })
     if ($conflicted.Count -gt 0) {
-        $relative = $conflicted | ForEach-Object { [System.IO.Path]::GetRelativePath($PSScriptRoot, $_) }
+        $prefix = $PSScriptRoot.TrimEnd('\', '/') + [IO.Path]::DirectorySeparatorChar
+        $relative = $conflicted | ForEach-Object {
+            if ($_.StartsWith($prefix, [StringComparison]::OrdinalIgnoreCase)) { $_.Substring($prefix.Length) } else { $_ }
+        }
         throw "Unresolved merge conflict markers found in: $($relative -join ', '). Resolve them before deploying."
     }
 
     # Even without markers a file can still throw at module load (bad require,
     # typo, missing dep). Require each function file the same way the Azure
     # Functions host does; a throw here is a 404-on-every-route in prod.
-    $nodeExe = (Get-Command node -ErrorAction SilentlyContinue)?.Source
-    if (-not $nodeExe) { $nodeExe = (Get-Command node.exe -ErrorAction SilentlyContinue)?.Source }
+    $nodeCmd = Get-Command node -ErrorAction SilentlyContinue
+    if (-not $nodeCmd) { $nodeCmd = Get-Command node.exe -ErrorAction SilentlyContinue }
+    $nodeExe = if ($nodeCmd) { $nodeCmd.Source } else { $null }
     if ($nodeExe) {
         $funcDir = Join-Path $PSScriptRoot 'src/functions'
         $loadScript = "const fs=require('fs'),path=require('path');const d=process.argv[1];for(const f of fs.readdirSync(d).filter(f=>f.endsWith('.js'))){try{require(path.join(d,f));}catch(e){console.error(f+': '+(e.message||e));process.exitCode=1;}}"
