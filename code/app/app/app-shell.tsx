@@ -9,6 +9,7 @@ import { BottomNav, type Tab } from "./components/bottom-nav";
 import { RecenterIcon } from "./components/icons";
 import { NearbyRacks } from "./components/nearby-racks";
 import { ProfileView } from "./components/profile-view";
+import { RacksList } from "./components/racks-list";
 import { useLiveStands } from "./use-live-stands";
 import { useUserLocation } from "./use-user-location";
 import { isOnMap, type LocationState } from "@/lib/user-location";
@@ -56,6 +57,11 @@ export function AppShell() {
     setRecenterKey((k) => k + 1);
   };
 
+  const showOnMap = (id: string) => {
+    setSelectedId(id);
+    setTab("map");
+  };
+
   return (
     <div className="flex h-dvh w-full flex-col bg-slate-50 font-sans">
       <AppHeader freeTotal={totalFree(spots)} status={status} />
@@ -95,6 +101,9 @@ export function AppShell() {
             />
           </div>
         </div>
+        {tab === "list" && (
+          <RacksList spots={spots} at={message?.at ?? null} status={status} onSelect={showOnMap} />
+        )}
         {tab === "profile" && <ProfileView />}
       </main>
 
