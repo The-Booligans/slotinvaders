@@ -31,10 +31,11 @@ describe("Landing page", () => {
     expect(screen.getByText("Full")).toBeDefined();
   });
 
-  it("renders the List and Map tabs", () => {
+  it("has a live counts section with every stand", () => {
     render(<Page />);
-    expect(screen.getByRole("tab", { name: "List" })).toBeDefined();
-    expect(screen.getByRole("tab", { name: "Map" })).toBeDefined();
+    expect(
+      screen.getByRole("heading", { level: 2, name: /every stand on the campus/i }),
+    ).toBeDefined();
   });
 
   it("renders the three feature cards", () => {

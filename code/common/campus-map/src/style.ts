@@ -32,7 +32,7 @@ export const STYLE = {
 
   camera: {
     dir: [0.3, 0.62, 0.78] as [number, number, number],
-    fit: 0.92,
+    fit: 1.15,
     fov: 36,
     maxPolar: 1.2,
   },
