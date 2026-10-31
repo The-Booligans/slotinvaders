@@ -40,7 +40,7 @@ required. For production we **recommend LoRaWAN**:
 - The payload is a single integer, well inside the LoRaWAN per-airtime
   budget even with regional duty cycles.
 - A LoRaWAN node sleeps between uplinks and wakes to send a few bytes, so a
-  stand can run on battery or a small solar panel with **no mains cabling** —
+  stand can run on a battery charged by a small solar panel, with **no mains cabling** —
   the device goes anywhere a sensor view fits.
 
 The backend contract stays the same: the LoRaWAN gateway relays the uplink

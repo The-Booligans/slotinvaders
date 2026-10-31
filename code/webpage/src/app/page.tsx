@@ -409,7 +409,8 @@ export default function Page() {
                 <li className="bullet">
                   <span className="bullet__num">05</span>
                   <span className="bullet__text">
-                    Runs on battery or a small solar panel — no mains, no cabling, mount it anywhere
+                    Runs on a battery charged by a small solar panel — no mains, no cabling,
+                    mount it anywhere
                   </span>
                 </li>
               </ul>

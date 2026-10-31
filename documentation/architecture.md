@@ -26,7 +26,7 @@ A stand has slots, and one or more devices watch them. We offer two sensor types
 
 Both solutions use the same `POST /v1/readings` path and the same per-device API key.
 
-**Uplink.** We tested the firmware over campus Wi-Fi + HTTPS (fast to iterate, no gateway required), but for production we recommend **LoRaWAN**: campus Wi-Fi doesn't reach every stand (open yards, basement garages, remote racks), and a LoRaWAN node can run on battery or a small solar panel with no mains cabling. The gateway relays uplinks over HTTPS to the Function App, so the backend contract is unchanged. See [sensor-evaluation.md](sensor-evaluation.md) for details.
+**Uplink.** We tested the firmware over campus Wi-Fi + HTTPS (fast to iterate, no gateway required), but for production we recommend **LoRaWAN**: campus Wi-Fi doesn't reach every stand (open yards, basement garages, remote racks), and a LoRaWAN node can run on a battery charged by a small solar panel, with no mains cabling. The gateway relays uplinks over HTTPS to the Function App, so the backend contract is unchanged. See [sensor-evaluation.md](sensor-evaluation.md) for details.
 
 ### What is deployed
 
@@ -93,7 +93,7 @@ flowchart LR
 
 | Part | Tech | Job |
 |---|---|---|
-| Devices | **LiDAR** (RPLidar C1 on an AtomS3) — one per stand, scans a 360° arc and classifies each slot by depth. **On-device YOLO** (AtomS3R-CAM-M12, ESP-DL YOLO11n) — two per stand, mounted top-left and top-right at 30° downward. Both count locally, every few seconds, and send only the integer. **Uplink**: we tested the firmware over campus Wi-Fi + HTTPS (TLS via the ESP certificate bundle), but we recommend **LoRaWAN** for production — campus Wi-Fi doesn't reach every stand (open yards, basement garages, remote racks), and LoRaWAN lets the device run on battery or a small solar panel with no mains cabling. |
+| Devices | **LiDAR** (RPLidar C1 on an AtomS3) — one per stand, scans a 360° arc and classifies each slot by depth. **On-device YOLO** (AtomS3R-CAM-M12, ESP-DL YOLO11n) — two per stand, mounted top-left and top-right at 30° downward. Both count locally, every few seconds, and send only the integer. **Uplink**: we tested the firmware over campus Wi-Fi + HTTPS (TLS via the ESP certificate bundle), but we recommend **LoRaWAN** for production — campus Wi-Fi doesn't reach every stand (open yards, basement garages, remote racks), and LoRaWAN lets the device run on a battery charged by a small solar panel, with no mains cabling. |
 | Sensor evaluation | `code/firmware/experiments/*` + `documentation/sensor-evaluation.md` | For each candidate sensor: wiring, firmware spike, bench + on-site accuracy, false-positive rate, cost, power, mounting constraints. The results pick what we deploy. |
 | Config | `code/backend/velo-stands-cosmos/stands.yaml` | The single source of truth for areas, stands and devices. `deploy-cosmos.ps1 -Sync` validates it and loads it into the `catalog` container; the Functions read it from there (cached 60 s) and serve a public subset without hashes at `GET /v1/config`. |
 | API | Azure Functions, Node 22, TypeScript | Authenticates devices, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. |
