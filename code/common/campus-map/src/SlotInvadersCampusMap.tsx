@@ -2,6 +2,7 @@
 
 import { Canvas } from '@react-three/fiber';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
+import * as THREE from 'three';
 import { Scene } from './Scene';
 import type { CameraInfo } from './CameraReporter';
 import { MarkerOverlay, type CampusMarker, type MarkerNodes } from './Markers';
@@ -64,6 +65,14 @@ export function SlotInvadersCampusMap({
         dpr={[1, 1.75]}
         camera={{ fov: 36, near: 1, far: 4000 }}
         gl={{ antialias: true }}
+        onCreated={({ gl }) => {
+          // iOS WKWebView WebGL doesn't honour r3f v9's default tone mapping /
+          // sRGB output, so colours render raw-linear and look dark + muted.
+          // Set both explicitly so iOS matches desktop Chrome.
+          gl.outputColorSpace = THREE.SRGBColorSpace;
+          gl.toneMapping = THREE.ACESFilmicToneMapping;
+          gl.toneMappingExposure = 1.0;
+        }}
       >
         <Scene
           glbUrl={glbUrl}
