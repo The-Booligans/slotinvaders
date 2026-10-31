@@ -40,6 +40,14 @@ Slot Invaders turns the six bike parking areas on the Endress+Hauser Reinach
 campus into live counters. Sensors at each stand report how many bikes they
 see; the app shows you where to park before you arrive.
 
+## Live environments
+
+| URL                                             | What it is                                                          |
+| ----------------------------------------------- | ------------------------------------------------------------------- |
+| [slotinvaders.ch](https://slotinvaders.ch)      | Landing page                                                        |
+| [app.slotinvaders.ch](https://app.slotinvaders.ch/) | The app                                                             |
+| [debug.slotinvaders.ch](https://debug.slotinvaders.ch/) | Development environment to test and research devices and sensors |
+
 ## Privacy first — no images leave the stand
 
 The challenge is explicit: **no faces, no license plates, no identifying or
