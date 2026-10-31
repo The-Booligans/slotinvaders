@@ -1,5 +1,4 @@
 import { HeroCampusMap } from "@/components/HeroCampusMap";
-import { StandList } from "@/components/StandList";
 
 const team = [
   "Dobrawa Kiefer",
@@ -122,90 +121,94 @@ export default function Page() {
                 before you even leave your desk.
               </p>
               <div className="hero-stores" aria-label="Get the app">
-                <a className="btn btn--store" href="https://app.slotinvaders.ch">
-                  <svg
-                    className="btn-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    focusable="false"
+                <div className="hero-stores-row">
+                  <a className="btn btn--store" href="https://app.slotinvaders.ch">
+                    <svg
+                      className="btn-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <circle cx="12" cy="12" r="9" />
+                      <path d="M3 12h18" />
+                      <path d="M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9z" />
+                    </svg>
+                    Web
+                  </a>
+                  <a
+                    className="btn btn--store"
+                    href="/Slot_Invaders_v1.2.apk"
+                    download
+                    title="Direct Android APK download"
                   >
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M3 12h18" />
-                    <path d="M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9z" />
-                  </svg>
-                  Web
-                </a>
-                <button
-                  type="button"
-                  className="btn btn--store btn--disabled"
-                  disabled
-                  aria-disabled="true"
-                  title="Coming soon"
-                >
-                  <svg
-                    className="btn-icon"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                    focusable="false"
+                    <svg
+                      className="btn-icon"
+                      viewBox="0 0 24 24"
+                      fill="none"
+                      stroke="currentColor"
+                      strokeWidth="1.7"
+                      strokeLinecap="round"
+                      strokeLinejoin="round"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path d="M12 3v12" />
+                      <path d="m7 10 5 5 5-5" />
+                      <path d="M5 21h14" />
+                    </svg>
+                    APK
+                  </a>
+                </div>
+                <div className="hero-stores-row">
+                  <button
+                    type="button"
+                    className="btn btn--store btn--disabled"
+                    disabled
+                    aria-disabled="true"
+                    title="Coming soon"
                   >
-                    <path d="M3.609 1.814L13.792 12 3.609 22.186a.996.996 0 0 1-.609-.92V2.734a1 1 0 0 1 .609-.92zm10.891 10.894l2.302 2.302-10.937 6.333 8.635-8.635zm3.198-3.199l2.808 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.495 12l2.203-2.491zM5.864 2.658l10.938 6.333-2.302 2.302L5.864 2.658z" />
-                  </svg>
-                  Play Store
-                </button>
-                <button
-                  type="button"
-                  className="btn btn--store btn--disabled"
-                  disabled
-                  aria-disabled="true"
-                  title="Coming soon"
-                >
-                  <svg
-                    className="btn-icon"
-                    viewBox="0 0 24 24"
-                    fill="currentColor"
-                    aria-hidden="true"
-                    focusable="false"
+                    <svg
+                      className="btn-icon"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
+                    </svg>
+                    App Store
+                  </button>
+                  <button
+                    type="button"
+                    className="btn btn--store btn--disabled"
+                    disabled
+                    aria-disabled="true"
+                    title="Coming soon"
                   >
-                    <path d="M17.05 20.28c-.98.95-2.05.8-3.08.35-1.09-.46-2.09-.48-3.24 0-1.44.62-2.2.44-3.06-.35C2.79 15.25 3.51 7.59 9.05 7.31c1.35.07 2.29.74 3.08.8 1.18-.24 2.31-.93 3.57-.84 1.51.12 2.65.72 3.4 1.8-3.12 1.87-2.38 5.98.48 7.13-.57 1.5-1.31 2.99-2.54 4.09zM12.03 7.25c-.15-2.23 1.66-4.07 3.74-4.25.29 2.58-2.34 4.5-3.74 4.25z" />
-                  </svg>
-                  App Store
-                </button>
-                <a
-                  className="btn btn--store"
-                  href="/Slot_Invaders_v1.2.apk"
-                  download
-                  title="Direct Android APK download"
-                >
-                  <svg
-                    className="btn-icon"
-                    viewBox="0 0 24 24"
-                    fill="none"
-                    stroke="currentColor"
-                    strokeWidth="1.7"
-                    strokeLinecap="round"
-                    strokeLinejoin="round"
-                    aria-hidden="true"
-                    focusable="false"
-                  >
-                    <path d="M12 3v12" />
-                    <path d="m7 10 5 5 5-5" />
-                    <path d="M5 21h14" />
-                  </svg>
-                  APK
-                </a>
+                    <svg
+                      className="btn-icon"
+                      viewBox="0 0 24 24"
+                      fill="currentColor"
+                      aria-hidden="true"
+                      focusable="false"
+                    >
+                      <path d="M3.609 1.814L13.792 12 3.609 22.186a.996.996 0 0 1-.609-.92V2.734a1 1 0 0 1 .609-.92zm10.891 10.894l2.302 2.302-10.937 6.333 8.635-8.635zm3.198-3.199l2.808 1.626a1 1 0 0 1 0 1.73l-2.808 1.626L15.495 12l2.203-2.491zM5.864 2.658l10.938 6.333-2.302 2.302L5.864 2.658z" />
+                    </svg>
+                    Play Store
+                  </button>
+                </div>
               </div>
               <a className="link-cta hero-learn" href="#features">
                 Learn how →
               </a>
             </div>
           </div>
-          <a className="scroll-cue" href="#stands" aria-label="Scroll to live counts">
+          <a className="scroll-cue" href="#features" aria-label="Scroll to features">
             <svg viewBox="0 0 24 24" aria-hidden="true" focusable="false">
               <path
                 d="M6 9l6 6 6-6"
@@ -219,27 +222,12 @@ export default function Page() {
           </a>
         </section>
 
-        <section className="section" id="stands">
-          <div className="container">
-            <span className="eyebrow">Live counts</span>
-            <h2>Every stand on the campus</h2>
-            <p className="lead">
-              Six stands, one in each parking area, 150 slots in total. Ten sensors keep the
-              counts current as the day fills them.
-            </p>
-            <div className="stands-wrap">
-              <StandList />
-            </div>
-          </div>
-        </section>
-
         <section className="section section--alt" id="features">
           <div className="container">
             <span className="eyebrow">Three ways to use it</span>
             <h2>From a quick browser check to a bike you track</h2>
-            <p className="lead">
-              Everything works without an account. Signing in only adds the things an account
-              enables.
+            <p className="lead lead--full">
+              Everything works without an account. Signing in only adds the things an account enables.
             </p>
 
             <div className="feature-grid">
@@ -299,7 +287,7 @@ export default function Page() {
             <span className="eyebrow">The thing on the stand</span>
             <h2>LiDAR or on-device YOLO, on an ESP32</h2>
             <p className="lead">
-              Ten small nodes on six stands. Each one counts on the board and sends a single
+              A small node on each bike stand. Each one counts on the board and sends a single
               number.
             </p>
 
@@ -314,13 +302,13 @@ export default function Page() {
                 <li className="bullet">
                   <span className="bullet__num">02</span>
                   <span className="bullet__text">
-                    LiDAR — an RPLidar C1 sweeps the row by depth, day or night. 5 in use
+                    LiDAR — an RPLidar C1 sweeps the row by depth, day or night
                   </span>
                 </li>
                 <li className="bullet">
                   <span className="bullet__num">03</span>
                   <span className="bullet__text">
-                    Camera — an AtomS3R-CAM runs YOLO11n locally; the frame stays in RAM. 5 in use
+                    Camera — an AtomS3R-CAM runs YOLO11n locally; the frame stays in RAM
                   </span>
                 </li>
                 <li className="bullet">
@@ -421,7 +409,7 @@ export default function Page() {
         <section className="section section--alt" id="architecture">
           <div className="container">
             <span className="eyebrow">Under the hood</span>
-            <h2>Ten sensors → the cloud → every open client</h2>
+            <h2>Sensors on bike stands → the cloud → every open client</h2>
             <p className="lead">
               A classic edge-to-cloud fan-out. Nothing exotic, nothing proprietary.
             </p>
@@ -479,7 +467,7 @@ export default function Page() {
                       fontWeight="600"
                       fill="#000"
                     >
-                      10 ESP32 nodes
+                      ESP32 nodes
                     </text>
                     <text
                       x="110"
@@ -489,7 +477,7 @@ export default function Page() {
                       fontSize="11.5"
                       fill="#525E6B"
                     >
-                      on 6 bike stands
+                      on bike stands
                     </text>
                     <g fill="#22D3EE">
                       {Array.from({ length: 10 }, (_, i) => (
@@ -799,7 +787,60 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="section" id="team">
+        <section className="section" id="try">
+          <div className="container">
+            <span className="eyebrow">Hands on</span>
+            <h2>Try it out yourself</h2>
+            <p className="lead">
+              The app is up and running. Open it in your browser, or sideload the APK on
+              your Android phone — the live counts on this page come from the same backend.
+            </p>
+            <div className="try-ctas">
+              <a className="btn" href="https://app.slotinvaders.ch">
+                <svg
+                  className="btn-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <circle cx="12" cy="12" r="9" />
+                  <path d="M3 12h18" />
+                  <path d="M12 3c2.5 2.5 4 5.5 4 9s-1.5 6.5-4 9c-2.5-2.5-4-5.5-4-9s1.5-6.5 4-9z" />
+                </svg>
+                Open the web app
+              </a>
+              <a className="btn" href="/Slot_Invaders_v1.2.apk" download>
+                <svg
+                  className="btn-icon"
+                  viewBox="0 0 24 24"
+                  fill="none"
+                  stroke="currentColor"
+                  strokeWidth="1.7"
+                  strokeLinecap="round"
+                  strokeLinejoin="round"
+                  aria-hidden="true"
+                  focusable="false"
+                >
+                  <path d="M12 3v12" />
+                  <path d="m7 10 5 5 5-5" />
+                  <path d="M5 21h14" />
+                </svg>
+                Download APK
+              </a>
+            </div>
+            <p className="try-note">
+              App Store and Play Store coming soon — we did submit the builds, but they
+              haven&rsquo;t been approved in time 🙃
+            </p>
+          </div>
+        </section>
+
+        <section className="section section--alt" id="team">
           <div className="container">
             <span className="eyebrow">The team</span>
             <h2>The Booligans</h2>
