@@ -74,6 +74,7 @@ export function AppShell() {
             selectedMarkerId={selectedId}
             onMarkerSelect={setSelectedId}
             recenterKey={recenterKey}
+            offset={[0, -40]}
           />
           <button
             type="button"

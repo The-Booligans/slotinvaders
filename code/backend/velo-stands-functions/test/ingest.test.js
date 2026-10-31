@@ -186,6 +186,19 @@ test("duplicates are ignored, repeats within 2 s are throttled, a restart is acc
   assert.equal(t.readings.docs.size, 4);
 });
 
+test("a quick reboot is detected by the seq going backwards, not frozen for 5 minutes", async () => {
+  const t = setup();
+  await t.send(KEYS.thor, { occupied: 9, seq: 25 });
+  t.advance(3);
+  // Device power-cycles and comes back immediately with a fresh counter. The
+  // stand must reflect the new reading right away — not wait for the stale
+  // window — because the pre-reboot occupied is no longer accurate.
+  const rebooted = await t.send(KEYS.thor, { occupied: 0, seq: 1 });
+  assert.equal(rebooted.status, 202);
+  assert.equal(t.state.docs.get("kaegen-hof").devices.thor.seq, 1);
+  assert.equal(t.state.docs.get("kaegen-hof").devices.thor.occupied, 0);
+});
+
 test("a parallel write to the same area is retried, not lost", async () => {
   const t = setup();
   await t.send(KEYS.probe, { occupied: 5, seq: 1 });

@@ -216,14 +216,20 @@ function createReadingsHandler({
 
         if (previous) {
           const sinceMs = receivedAt.getTime() - Date.parse(previous.at);
-          if (reading.seq <= previous.seq) {
+          if (reading.seq < previous.seq) {
+            // Device-local seq is monotonic within a session; a decrease means
+            // the device rebooted. Accept the fresh counter without waiting for
+            // the staleAfterSeconds window — otherwise a quick reboot would
+            // freeze the stand's state for the full stale window.
+            log.step(`seq ${reading.seq} < last seq ${previous.seq}: treating it as a device reboot`);
+          } else if (reading.seq === previous.seq) {
             if (sinceMs <= staleAfterSeconds * 1000) {
               return finish(
                 reply(200, { device: device.deviceId, duplicate: true, nextInSeconds: catalog.settings.reportIntervalSeconds }),
-                `device ${device.deviceId}: seq ${reading.seq} <= last seq ${previous.seq}, ignored as duplicate or late retry`
+                `device ${device.deviceId}: seq ${reading.seq} == last seq ${previous.seq}, ignored as duplicate retry`
               );
             }
-            log.step(`seq ${reading.seq} <= last seq ${previous.seq}, but the last reading is ${Math.round(sinceMs / 1000)} s old: treating it as a device restart`);
+            log.step(`seq ${reading.seq} == last seq ${previous.seq}, but the last reading is ${Math.round(sinceMs / 1000)} s old: treating it as a device restart`);
           } else if (sinceMs < RATE_LIMIT_MS) {
             return finish(
               reply(429, { error: "too many requests, wait 2 s between readings" }, { "Retry-After": "2" }),
