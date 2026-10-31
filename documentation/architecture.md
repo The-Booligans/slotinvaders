@@ -243,8 +243,10 @@ The client endpoints need no authentication. They are all read-only and return c
 | `GET /api/v1/config` | The public config, without key hashes |
 | `POST /api/v1/negotiate` | `{ url }`, a short-lived Web PubSub URL that can only receive |
 | `GET /api/v1/history?stand=…&from=…&to=…` | The stand's readings, oldest first |
-| `GET /api/v1/debug/devices` | Per-device summary for the debug app: public info plus `lastSeenAt`, `stale` and (once images are in) `lastImage` |
+| `GET /api/v1/debug/devices` | Per-device summary for the debug app: public info plus `lastSeenAt`, `stale` and `lastImage` |
 | `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | Recent log lines of one device, from an in-memory ring buffer the ingest handler writes to |
+| `GET /api/v1/debug/devices/{deviceId}/image` | The latest JPEG the device uploaded for debug viewing, or 404 if none yet |
+| `POST /api/v1/debug/images` | A device uploads its latest JPEG for the debug app. `X-Api-Key` + `Content-Type: image/jpeg`. In-memory only, never written to Cosmos. Unrelated to the plan-B `/v1/images` recognition path |
 
 ```json
 GET /api/v1/state

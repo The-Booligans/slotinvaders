@@ -12,6 +12,7 @@
 
 const { reply } = require("./http");
 const { deviceLog: defaultDeviceLog } = require("./device-log");
+const { imageStore: defaultImageStore } = require("./image-store");
 
 function logError(context, tag, err) {
   context.error(`${tag} ${err?.stack ?? err?.message ?? err}`);
@@ -96,13 +97,43 @@ async function readAreaStates(stateContainer) {
   return byDevice;
 }
 
+function imageSummary(entry, deviceId, imageBaseUrl) {
+  if (!entry) return null;
+  const base = imageBaseUrl.replace(/\/+$/, "");
+  const url = `${base}/api/v1/debug/devices/${encodeURIComponent(deviceId)}/image?seq=${entry.seq}`;
+  return {
+    deviceId,
+    receivedAt: entry.receivedAt,
+    seq: entry.seq,
+    url,
+    mimeType: entry.mimeType,
+    ...(entry.width ? { width: entry.width } : {}),
+    ...(entry.height ? { height: entry.height } : {}),
+  };
+}
+
+function originFromRequest(request) {
+  try {
+    const u = new URL(request.url);
+    return `${u.protocol}//${u.host}`;
+  } catch {
+    return "";
+  }
+}
+
 /**
  * GET /api/v1/debug/devices
  * One summary per device: its public info, lastSeenAt from state and whether
- * it is stale. lastImage is always null until /v1/images is in place.
+ * it is stale. lastImage comes from the in-memory debug image store, which is
+ * fed by POST /api/v1/debug/images.
  */
-function createDebugDevicesHandler({ catalogCache, containers, now = () => new Date() }) {
-  return async function handleDebugDevices(_request, context) {
+function createDebugDevicesHandler({
+  catalogCache,
+  containers,
+  now = () => new Date(),
+  imageStore = defaultImageStore,
+}) {
+  return async function handleDebugDevices(request, context) {
     const nowDate = now();
     let catalog;
     try {
@@ -121,11 +152,21 @@ function createDebugDevicesHandler({ catalogCache, containers, now = () => new D
       areaStatesByDevice = new Map();
     }
 
+    const origin = originFromRequest(request);
+    const staleAfterMs = (catalog.settings?.staleAfterSeconds ?? 300) * 1000;
+
     const devices = catalog.devices
       .filter((d) => d.status !== "retired")
       .map((d) => {
         const assignment = catalog.openAssignmentByDevice.get(d.deviceId);
-        const { lastSeenAt, stale } = deviceLatest(catalog, areaStatesByDevice, d.deviceId, nowDate.getTime());
+        const latest = deviceLatest(catalog, areaStatesByDevice, d.deviceId, nowDate.getTime());
+        const image = imageStore.get(d.deviceId);
+        const stateAtMs = latest.lastSeenAt ? Date.parse(latest.lastSeenAt) : null;
+        const imageAtMs = image ? Date.parse(image.receivedAt) : null;
+        const seenAtMs = Math.max(stateAtMs ?? -Infinity, imageAtMs ?? -Infinity);
+        const haveAny = Number.isFinite(seenAtMs);
+        const lastSeenAt = haveAny ? new Date(seenAtMs).toISOString() : null;
+        const stale = !haveAny || nowDate.getTime() - seenAtMs > staleAfterMs;
         return {
           device: {
             id: d.deviceId,
@@ -133,9 +174,9 @@ function createDebugDevicesHandler({ catalogCache, containers, now = () => new D
             hardware: d.hardware ?? "unknown",
             mode: d.mode,
           },
-          lastImage: null,
+          lastImage: imageSummary(image, d.deviceId, origin),
           lastSeenAt,
-          stale: lastSeenAt === null ? true : stale,
+          stale,
         };
       });
 
