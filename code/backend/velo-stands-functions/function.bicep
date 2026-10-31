@@ -13,6 +13,7 @@
 //   Consumption plan (Y1)       pay per execution, scales to zero
 //   Function App                runs the code, with a managed identity
 //   Cosmos DB role assignment   lets that identity read and write the data, no keys
+//   Web PubSub + hub            holds the app's WebSockets; the function pushes to it
 //
 // Deploy with deploy-function.ps1, or directly:
 //   az deployment group create -g nag-rg-slotinvaders --template-file function.bicep -p cosmosAccountName=<account>
@@ -41,6 +42,13 @@ param logDailyCapGb string = '0.15'
 
 @description('true: log every step of every request. false: one summary line per request.')
 param debugLogging bool = true
+
+@description('Web PubSub tier. Free_F1: 20 connections and 20,000 messages a day, enough for development. Standard_S1 for the demo.')
+@allowed([
+  'Free_F1'
+  'Standard_S1'
+])
+param pubsubSku string = 'Free_F1'
 
 @description('Tags on every resource.')
 param tags object = {
@@ -105,6 +113,35 @@ resource plan 'Microsoft.Web/serverfarms@2024-04-01' = {
   properties: {}
 }
 
+// Holds the app's WebSockets. The function sends to it: a broadcast every 10 s,
+// and the current snapshot to each new connection (the `connected` event).
+resource pubsub 'Microsoft.SignalRService/webPubSub@2024-03-01' = {
+  name: 'wps-velostands-${suffix}'
+  location: location
+  tags: tags
+  sku: {
+    name: pubsubSku
+    capacity: 1
+  }
+  properties: {}
+}
+
+resource pubsubHub 'Microsoft.SignalRService/webPubSub/hubs@2024-03-01' = {
+  parent: pubsub
+  name: 'occupancy'
+  properties: {
+    anonymousConnectPolicy: 'deny'
+    eventHandlers: [
+      {
+        urlTemplate: 'https://${appName}.azurewebsites.net/api/v1/pubsub/events'
+        systemEvents: [
+          'connected'
+        ]
+      }
+    ]
+  }
+}
+
 resource cosmos 'Microsoft.DocumentDB/databaseAccounts@2024-11-15' existing = {
   name: cosmosAccountName
 }
@@ -140,6 +177,8 @@ resource app 'Microsoft.Web/sites@2024-04-01' = {
         { name: 'COSMOS_ENDPOINT', value: cosmos.properties.documentEndpoint }
         { name: 'COSMOS_DATABASE', value: cosmosDatabaseName }
         { name: 'DEBUG_LOGGING', value: debugLogging ? 'true' : 'false' }
+        { name: 'WEBPUBSUB_CONNECTION_STRING', value: pubsub.listKeys().primaryConnectionString }
+        { name: 'WEBPUBSUB_HUB', value: pubsubHub.name }
       ]
     }
   }
@@ -159,5 +198,7 @@ resource cosmosAccess 'Microsoft.DocumentDB/databaseAccounts/sqlRoleAssignments@
 output appName string = app.name
 output hostName string = app.properties.defaultHostName
 output readingsUrl string = 'https://${app.properties.defaultHostName}/api/v1/readings'
+output negotiateUrl string = 'https://${app.properties.defaultHostName}/api/v1/negotiate'
+output pubsubName string = pubsub.name
 output insightsName string = insights.name
 output principalId string = app.identity.principalId

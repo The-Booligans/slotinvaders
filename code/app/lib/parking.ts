@@ -1,34 +1,26 @@
-import { STANDS, type CampusStand } from "@slotinvaders/campus-map/data";
-
-// Mock data until the live API and device location exist.
+import { STAND_POSITIONS } from "./stand-positions";
+import type { StandStatus } from "./stands-api";
 
 export type OccupancyLevel = "free" | "busy" | "almost-full" | "full";
 
 export interface ParkingSpot {
   id: string;
+  /** area name, e.g. "Veloparking Flowtec" */
   name: string;
-  kind: CampusStand["kind"];
+  /** what's left of the stand name, e.g. "Stand 1" */
+  standLabel: string;
   capacity: number;
+  occupied: number;
   free: number;
-  /** campus metres, +x east / +y north */
-  x: number;
-  y: number;
-  distanceM: number;
+  stale: boolean;
+  updatedAt: string | null;
+  /** campus metres, +x east / +y north; null if the stand isn't placed on the map */
+  position: [number, number] | null;
+  distanceM: number | null;
 }
 
-/** Stand-in for the user's position: the main entrance between the two E+H zones. */
+/** Stand-in for the user's position until device location is wired in: the main entrance. */
 export const MOCK_USER_POSITION: [number, number] = [40, 0];
-
-// fixed so the demo looks the same on every load
-const MOCK_OCCUPANCY: Record<string, number> = {
-  sternenhof: 0.42,
-  "flow-main": 0.75,
-  "flow-garage-south": 0.93,
-  "flow-south-west": 1,
-  "flow-south-east": 0.3,
-  "flow-garage-north": 0.6,
-};
-const DEFAULT_OCCUPANCY = 0.5;
 
 const WALKING_M_PER_MIN = 80;
 
@@ -36,25 +28,45 @@ export function distance([ax, ay]: [number, number], [bx, by]: [number, number])
   return Math.hypot(ax - bx, ay - by);
 }
 
-export function nearbySpots(
+/** "Veloparking Flowtec, Stand 1" in area "Veloparking Flowtec" -> "Stand 1". */
+export function standLabel(name: string, areaName: string): string {
+  const prefix = `${areaName}, `;
+  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
+}
+
+/** Live stands as map spots, nearest first; stands without a map position go last. */
+export function toParkingSpots(
+  stands: StandStatus[],
   from: [number, number] = MOCK_USER_POSITION,
-  stands: CampusStand[] = STANDS,
+  positions: Record<string, [number, number]> = STAND_POSITIONS,
 ): ParkingSpot[] {
   return stands
     .map((s) => {
-      const occupied = Math.round(s.capacity * (MOCK_OCCUPANCY[s.id] ?? DEFAULT_OCCUPANCY));
+      const position = positions[s.id] ?? null;
       return {
         id: s.id,
-        name: s.label,
-        kind: s.kind,
-        capacity: s.capacity,
-        free: Math.max(0, s.capacity - occupied),
-        x: s.x,
-        y: s.y,
-        distanceM: Math.round(distance(from, [s.x, s.y])),
+        name: s.areaName,
+        standLabel: standLabel(s.name, s.areaName),
+        capacity: s.maxOccupancy,
+        occupied: s.currentOccupancy,
+        free: s.free,
+        stale: s.stale,
+        updatedAt: s.updatedAt,
+        position,
+        distanceM: position ? Math.round(distance(from, position)) : null,
       };
     })
-    .sort((a, b) => a.distanceM - b.distanceM);
+    .sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity) || a.name.localeCompare(b.name));
+}
+
+export function hasData(spot: Pick<ParkingSpot, "updatedAt">): boolean {
+  return spot.updatedAt !== null;
+}
+
+/** Free slots over the stands that have reported at least once, or null if none has. */
+export function totalFree(spots: ParkingSpot[]): number | null {
+  const reporting = spots.filter(hasData);
+  return reporting.length ? reporting.reduce((sum, s) => sum + s.free, 0) : null;
 }
 
 export function occupancyPercent({ capacity, free }: Pick<ParkingSpot, "capacity" | "free">) {
@@ -76,6 +88,13 @@ export const LEVEL_COLOR: Record<OccupancyLevel, string> = {
   full: "#dc2626",
 };
 
+/** Pin colour for a stand that never reported. */
+export const NO_DATA_COLOR = "#94a3b8";
+
+export function spotColor(spot: Pick<ParkingSpot, "capacity" | "free" | "updatedAt">): string {
+  return hasData(spot) ? LEVEL_COLOR[occupancyLevel(occupancyPercent(spot))] : NO_DATA_COLOR;
+}
+
 export function formatDistance(m: number): string {
   return m < 1000 ? `${Math.round(m)} m` : `${(m / 1000).toFixed(1)} km`;
 }
@@ -84,6 +103,11 @@ export function walkingMinutes(m: number): number {
   return Math.max(1, Math.round(m / WALKING_M_PER_MIN));
 }
 
-export function kindLabel(kind: CampusStand["kind"]): string {
-  return { covered: "Covered", garage: "Garage", open: "Open air" }[kind];
+/** "just now", "5 min ago", "2 h ago", "3 d ago": age of `then` at server time `now`. */
+export function formatAge(then: string, now: string): string {
+  const seconds = Math.max(0, (Date.parse(now) - Date.parse(then)) / 1000);
+  if (seconds < 60) return "just now";
+  if (seconds < 3600) return `${Math.floor(seconds / 60)} min ago`;
+  if (seconds < 86400) return `${Math.floor(seconds / 3600)} h ago`;
+  return `${Math.floor(seconds / 86400)} d ago`;
 }

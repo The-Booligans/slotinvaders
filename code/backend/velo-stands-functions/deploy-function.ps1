@@ -5,7 +5,8 @@
 .DESCRIPTION
   1. Creates (or updates) the Function App from function.bicep: Consumption plan
      on Windows, storage account, Application Insights with a daily log cap,
-     and read/write access to the Cosmos DB for the app's managed identity.
+     read/write access to the Cosmos DB for the app's managed identity, and
+     Web PubSub for the app's live updates.
   2. Packages the code (host.json, package.json, src/ plus production
      dependencies) and deploys it.
 
@@ -26,6 +27,8 @@
   Function App name. Default: func-velostands-<hash>.
 .PARAMETER CosmosAccount
   Cosmos DB account name. Default: the one created by deploy-cosmos.ps1.
+.PARAMETER PubSubSku
+  Web PubSub tier: Free_F1 (default, 20 connections) or Standard_S1 (demo).
 .PARAMETER QuietLogs
   One log line per request instead of every step.
 .PARAMETER SkipInfra
@@ -47,6 +50,8 @@ param(
     [string]$AppName,
     [string]$CosmosAccount,
     [string]$CosmosDatabase = 'velostands',
+    [ValidateSet('Free_F1', 'Standard_S1')]
+    [string]$PubSubSku = 'Free_F1',
     [switch]$QuietLogs,
     [switch]$SkipInfra,
     [switch]$SkipCode
@@ -149,7 +154,7 @@ Write-Host "Cosmos DB account: $CosmosAccount"
 
 # --- Azure resources -------------------------------------------------------------
 if (-not $SkipInfra) {
-    foreach ($provider in 'Microsoft.Web', 'Microsoft.Storage', 'Microsoft.Insights', 'Microsoft.OperationalInsights') {
+    foreach ($provider in 'Microsoft.Web', 'Microsoft.Storage', 'Microsoft.Insights', 'Microsoft.OperationalInsights', 'Microsoft.SignalRService') {
         $state = Invoke-Az (@('provider', 'show', '-n', $provider, '--query', 'registrationState', '-o', 'tsv') + $sub) -AllowFail
         if ($state -eq 'NotRegistered' -or $state -eq 'Unregistered') {
             Write-Step "Registering the $provider resource provider (one-time per subscription)"
@@ -163,6 +168,7 @@ if (-not $SkipInfra) {
         cosmosAccountName  = @{ value = $CosmosAccount }
         cosmosDatabaseName = @{ value = $CosmosDatabase }
         debugLogging       = @{ value = (-not $QuietLogs) }
+        pubsubSku          = @{ value = $PubSubSku }
     }
     if ($AppName) { $parameters['appName'] = @{ value = $AppName } }
     $parameterJson = [ordered]@{
@@ -173,7 +179,7 @@ if (-not $SkipInfra) {
     $parameterFile = Join-Path ([IO.Path]::GetTempPath()) "velostands-function-$PID.parameters.json"
     [IO.File]::WriteAllText($parameterFile, $parameterJson)
 
-    Write-Step "Function App, storage and Application Insights in $Location"
+    Write-Step "Function App, storage, Application Insights and Web PubSub in $Location"
     $deployArgs = @(
         'deployment', 'group', 'create',
         '-g', $ResourceGroup,
@@ -195,6 +201,7 @@ function Get-DeploymentOutput([string]$Name) {
 }
 $appNameOut = Get-DeploymentOutput 'appName'
 $readingsUrl = Get-DeploymentOutput 'readingsUrl'
+$negotiateUrl = Get-DeploymentOutput 'negotiateUrl'
 $hostName = Get-DeploymentOutput 'hostName'
 $insightsName = Get-DeploymentOutput 'insightsName'
 if (-not $appNameOut) {
@@ -334,6 +341,7 @@ Write-Host 'Done.' -ForegroundColor Green
 Write-Host "  Function App   $appNameOut (Consumption plan, Windows, Node.js 22)"
 Write-Host "  Device API     POST $readingsUrl"
 Write-Host "  Stand status   GET  https://$hostName/api/v1/stands   (public, no key)"
+Write-Host "  Live updates   POST $negotiateUrl   (WebSocket via Web PubSub)"
 Write-Host "  Logs           Application Insights '$insightsName' (daily cap 0.15 GB)"
 Write-Host ''
 Write-Host 'Send a test reading (needs a device key whose hash is in the catalog, see README):'

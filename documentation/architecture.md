@@ -122,7 +122,9 @@ flowchart LR
 
 - The map shows one pin per stand, coloured by occupancy (green < 60 %, amber < 85 %, orange < 100 %, red full) and labelled with free slots, plus a "you are here" dot.
 - A swipeable **Nearby racks** carousel overlays the bottom of the map, sorted by distance. Swiping a card selects its pin and the camera glides to it; tapping a pin scrolls to its card. A button recenters the whole campus.
-- Stand positions come from `campus.json` in `@slotinvaders/campus-map`. Occupancy and the user's position are **mocks** (`code/app/lib/parking.ts`) until `GET /v1/state` and device location are wired in.
+- Occupancy is **live**: the app calls `POST /v1/negotiate` and opens a WebSocket (`code/app/lib/live-stands.ts`), which receives every stand's status on connect and then every 10 s. It reconnects with backoff (1 s … 30 s) and keeps showing the last data meanwhile; the header shows Live / Connecting… / Offline.
+- Each card shows the area, stand, slots, % busy and bike count, free slots, walking distance and freshness ("Updated 2 min ago", "Some sensors offline", "No sensor data yet"). A stand that never reported gets a grey "?" pin and is left out of the header's free total.
+- Stand positions on the map are an **approximate** hand-made table (`code/app/lib/stand-positions.ts`) until `stands.yaml` has real locations. The user's position is still a **mock** until device location is wired in.
 - Profile is a placeholder: nobody logs in.
 
 ## What happens when a bike is parked
@@ -130,11 +132,11 @@ flowchart LR
 1. Stand `fsw-1` at Flow South West has 20 slots and two devices. `tof-01` is a ToF array that counts occupied bays locally and sees 9 bikes; `lidar-01` is a LiDAR scanner that sees 8. Both send `POST /v1/readings`. Neither ever sends an image.
 2. The Function hashes the API key and finds the device in the bundled config, which gives it the stand and the mode. The device never says who it is in the request body.
 3. The Function appends the reading to `readings` with its source and stores the device's latest count in `state`. The stand then has 20 − (9 + 8) = 3 free slots. The area total is the sum of its stands.
-4. If an area's free count or stale flag changed, it broadcasts one small JSON message through Web PubSub, and every open client updates within about a second.
+4. A timer Function broadcasts the status of every stand through Web PubSub every 10 s, so every open client shows the new count within about 10 s.
 
 **Fallback path.** If a stand is on plan B (no sensor configuration proved out for it), its device is an ESP32-CAM in `cloud` mode: it sends a cropped JPEG to `POST /v1/images`. The Function calls Azure AI Vision, counts the bicycles, drops the image, and from step 3 on the path is identical.
 
-A client that opens later first fetches `GET /v1/state`, then calls `/negotiate` and opens the WebSocket for changes. After a reconnect it fetches the snapshot again, so it never misses an update without noticing.
+A client calls `/negotiate` and opens the WebSocket. Web PubSub tells the Function about the new connection (`connected` event), and the Function sends that client the current snapshot right away. Every broadcast is a full snapshot, so a client that reconnects never misses anything.
 
 ## Config file
 
@@ -250,7 +252,9 @@ The client endpoints need no authentication. They are all read-only and return c
 |---|---|
 | `GET /api/v1/state` | `Snapshot` |
 | `GET /api/v1/config` | The public config, without key hashes |
-| `POST /api/v1/negotiate` | `{ url }`, a short-lived Web PubSub URL that can only receive |
+| `GET /api/v1/stands` | Every active stand: name, area, current and max occupancy, free, stale, updatedAt |
+| `POST /api/v1/negotiate` | `{ url }`, a Web PubSub URL (valid 60 min) that can only receive |
+| `POST /api/v1/pubsub/events` | Called by Web PubSub, not by clients: on `connected` the Function sends the new connection the current snapshot |
 | `GET /api/v1/history?stand=…&from=…&to=…` | The stand's readings, oldest first |
 | `GET /api/v1/debug/devices` | Per-device summary for the debug app: public info plus `lastSeenAt`, `stale` and `lastImage` |
 | `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | Recent log lines of one device, from an in-memory ring buffer the ingest handler writes to |
@@ -275,12 +279,15 @@ const { url } = await (await fetch(`${API}/api/v1/negotiate`, { method: "POST" }
 const ws = new WebSocket(url);
 ws.onmessage = (e) => apply(JSON.parse(e.data));
 
-// each message
-{ "type": "area", "id": "flow-sw", "capacity": 20, "free": 3, "stale": false, "at": "…" }
+// each message: the body of GET /api/v1/stands plus `type`
+{ "type": "stands", "at": "…", "stands": [
+  { "id": "kaegen-hof-1", "name": "Kägenstrasse 2 – Hof, Stand 1", "areaId": "kaegen-hof", "areaName": "Kägenstrasse 2 – Hof",
+    "currentOccupancy": 8, "maxOccupancy": 40, "free": 32, "stale": false, "updatedAt": "…" } ] }
 ```
 
-- The ingest Functions broadcast directly through Web PubSub.
-- A timer Function runs every minute. It marks areas stale when their devices go quiet and broadcasts that change too.
+- Azure Functions can't hold WebSockets, so Web PubSub (hub `occupancy`) holds them and the Functions only send.
+- A timer Function broadcasts the full snapshot every 10 s (`PUSH_SCHEDULE`). Staleness is worked out on each broadcast, so a quiet device shows up without extra work.
+- A new connection gets the snapshot at once through the `connected` event handler, instead of waiting for the next broadcast.
 - For a stand with a cloud device that also sends its own count, `/history` shows the device count and the cloud count side by side.
 
 ## Data model

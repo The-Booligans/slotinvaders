@@ -1,40 +1,77 @@
 import { describe, expect, it } from "vitest";
-import type { CampusStand } from "@slotinvaders/campus-map/data";
 import {
   distance,
+  formatAge,
   formatDistance,
-  kindLabel,
-  nearbySpots,
+  NO_DATA_COLOR,
+  LEVEL_COLOR,
   occupancyLevel,
   occupancyPercent,
+  spotColor,
+  standLabel,
+  toParkingSpots,
+  totalFree,
   walkingMinutes,
 } from "./parking";
+import { STAND_POSITIONS } from "./stand-positions";
+import type { StandStatus } from "./stands-api";
 
-const stand = (id: string, x: number, y: number, capacity = 10): CampusStand => ({
+const status = (id: string, patch: Partial<StandStatus> = {}): StandStatus => ({
   id,
-  kind: "covered",
-  label: id,
-  capacity,
-  x,
-  y,
+  name: `Area ${id}, Stand 1`,
+  areaId: id,
+  areaName: `Area ${id}`,
+  currentOccupancy: 5,
+  maxOccupancy: 20,
+  free: 15,
+  stale: false,
+  updatedAt: "2026-10-31T14:48:30.925Z",
+  ...patch,
 });
 
-describe("nearbySpots", () => {
-  it("sorts stands by distance from the given position", () => {
-    const spots = nearbySpots([0, 0], [stand("far", 300, 400), stand("near", 3, 4)]);
-    expect(spots.map((s) => s.id)).toEqual(["near", "far"]);
-    expect(spots.map((s) => s.distanceM)).toEqual([5, 500]);
+describe("toParkingSpots", () => {
+  const positions: Record<string, [number, number]> = { near: [3, 4], far: [300, 400] };
+
+  it("maps the API fields and sorts by distance, unplaced stands last", () => {
+    const spots = toParkingSpots([status("far"), status("lost"), status("near")], [0, 0], positions);
+    expect(spots.map((s) => s.id)).toEqual(["near", "far", "lost"]);
+    expect(spots.map((s) => s.distanceM)).toEqual([5, 500, null]);
+    expect(spots[0]).toMatchObject({
+      name: "Area near",
+      standLabel: "Stand 1",
+      capacity: 20,
+      occupied: 5,
+      free: 15,
+      position: [3, 4],
+    });
+    expect(spots[2].position).toBeNull();
   });
 
-  it("keeps free slots between 0 and capacity", () => {
-    for (const s of nearbySpots()) {
-      expect(s.free).toBeGreaterThanOrEqual(0);
-      expect(s.free).toBeLessThanOrEqual(s.capacity);
-    }
+  it("places every stand the backend currently has", () => {
+    const ids = ["cmr-ost-1", "cmr-sued-1", "flow-west-1", "kaegen-hof-1", "velo-ds-1", "velo-flow-1"];
+    expect(Object.keys(STAND_POSITIONS).sort()).toEqual(ids);
   });
+});
 
-  it("uses every campus stand by default", () => {
-    expect(nearbySpots().length).toBeGreaterThan(0);
+describe("standLabel", () => {
+  it("drops the area name from the stand name", () => {
+    expect(standLabel("Veloparking Flowtec, Stand 1", "Veloparking Flowtec")).toBe("Stand 1");
+    expect(standLabel("Odd name", "Veloparking Flowtec")).toBe("Odd name");
+  });
+});
+
+describe("totalFree", () => {
+  it("only counts stands that have reported", () => {
+    const spots = toParkingSpots([status("a", { free: 7 }), status("b", { free: 20, updatedAt: null })], [0, 0], {});
+    expect(totalFree(spots)).toBe(7);
+    expect(totalFree(spots.slice(1))).toBeNull();
+  });
+});
+
+describe("spotColor", () => {
+  it("is grey without data, else by occupancy", () => {
+    expect(spotColor({ capacity: 20, free: 20, updatedAt: null })).toBe(NO_DATA_COLOR);
+    expect(spotColor({ capacity: 20, free: 0, updatedAt: "2026-10-31T00:00:00Z" })).toBe(LEVEL_COLOR.full);
   });
 });
 
@@ -71,11 +108,17 @@ describe("formatting", () => {
     expect(walkingMinutes(400)).toBe(5);
   });
 
-  it("labels stand kinds", () => {
-    expect(kindLabel("garage")).toBe("Garage");
-  });
-
   it("measures straight-line distance", () => {
     expect(distance([0, 0], [6, 8])).toBe(10);
+  });
+
+  it.each([
+    ["2026-10-31T14:48:30Z", "just now"],
+    ["2026-10-31T14:44:00Z", "4 min ago"],
+    ["2026-10-31T13:02:00Z", "1 h ago"],
+    ["2026-10-28T14:00:00Z", "3 d ago"],
+    ["2026-10-31T14:49:00Z", "just now"],
+  ])("ages %s as %s", (then, label) => {
+    expect(formatAge(then, "2026-10-31T14:48:35Z")).toBe(label);
   });
 });

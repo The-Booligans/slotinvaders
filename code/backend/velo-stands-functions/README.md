@@ -1,11 +1,12 @@
 # Velo Stands – device API and stand status (Azure Functions, Node.js 22)
 
-Two HTTP functions:
-
-| Function | Route | Auth | |
+| Function | Trigger | Auth | |
 |---|---|---|---|
 | `readings` | `POST /api/v1/readings` | device key in `X-Api-Key` | Devices send their count |
 | `stands` | `GET /api/v1/stands[/<standId>]` | none (public, read-only) | Name, current and maximum occupancy per stand |
+| `negotiate` | `POST /api/v1/negotiate` | none | A receive-only WebSocket URL for the app |
+| `broadcast` | timer, every 10 s | – | Pushes every stand's status to all connected apps |
+| `pubsubEvents` | `POST /api/v1/pubsub/events` | called by Web PubSub | Sends the snapshot to each new connection |
 
 ## POST /api/v1/readings
 
@@ -80,6 +81,30 @@ Log lines look like this:
 [stands 5e1a77c0] <- 200 in 22 ms, 5.9 RU | 6 stands, 1 stale
 ```
 
+## Live updates over WebSocket (Web PubSub)
+
+The app doesn't poll `GET /api/v1/stands`; it opens a WebSocket and gets the data pushed. Azure Functions can't hold WebSockets, so Azure Web PubSub (hub `occupancy`) holds the connections and the functions only send to it.
+
+```js
+const { url } = await (await fetch(`${API}/api/v1/negotiate`, { method: "POST" })).json();
+const ws = new WebSocket(url);   // wss://<wps>.webpubsub.azure.com/client/hubs/occupancy?access_token=…
+ws.onmessage = (e) => render(JSON.parse(e.data));
+```
+
+Every message is the body of `GET /api/v1/stands` plus `"type": "stands"`:
+
+```json
+{ "type": "stands", "at": "2026-11-02T07:00:00.000Z", "stands": [ { "id": "kaegen-hof-1", "currentOccupancy": 21, "maxOccupancy": 40, "free": 19, "stale": false, … } ] }
+```
+
+- **On connect:** Web PubSub posts a `connected` event to `/api/v1/pubsub/events`, and the function sends that connection the current snapshot, so the app doesn't wait for the next broadcast.
+- **Every 10 s:** the `broadcast` timer sends the snapshot to everyone. Change the interval with the app setting `PUSH_SCHEDULE` (six-field NCRONTAB, default `*/10 * * * * *`).
+- The client URL is valid for 60 minutes and can only receive. When the socket drops, the app negotiates again.
+- Without `WEBPUBSUB_CONNECTION_STRING` (e.g. locally), `negotiate` answers 503 and the timer sends nothing; the rest of the API works as before.
+- The counts come from the same caches as `GET /api/v1/stands`, so a broadcast costs at most one Cosmos read (~3 RU) per instance.
+
+`function.bicep` creates the Web PubSub resource, the hub with its event handler and the two app settings. Pick the tier with `./deploy-function.ps1 -PubSubSku Free_F1|Standard_S1`: Free allows 20 connections and 20,000 messages a day, which at one message every 10 s is about two phones all day long, so use Standard S1 for the demo.
+
 ## What the readings function writes
 
 | Container | What changes |
@@ -97,9 +122,12 @@ Two devices in the same area can send at the same moment. The area document is t
 | `src/functions/stands.js` | Registers `GET /api/v1/stands/{standId?}` |
 | `src/functions/config.js` | Registers `GET /api/v1/config` |
 | `src/functions/debug.js` | Registers `GET /api/v1/debug/devices` and `GET /api/v1/debug/devices/{deviceId}/logs` |
+| `src/functions/push.js` | Registers `POST /api/v1/negotiate`, the `broadcast` timer and `POST /api/v1/pubsub/events` |
 | `src/functions/debug-images.js` | Registers `POST /api/v1/debug/images` and `GET /api/v1/debug/devices/{deviceId}/image` |
 | `src/lib/stands.js` | Stand status: state cache, totals, public response |
-| `src/lib/runtime.js` | Cosmos containers and caches shared by all functions |
+| `src/lib/runtime.js` | Cosmos containers, Web PubSub client and caches shared by all functions |
+| `src/lib/push.js` | Negotiate, broadcast and `connected`-event handlers |
+| `src/lib/pubsub.js` | Web PubSub client, from `WEBPUBSUB_CONNECTION_STRING` |
 | `src/lib/http.js` | Log prefix, JSON replies, CORS, OPTIONS preflight |
 | `src/lib/ingest.js` | The request flow and the log output |
 | `src/lib/debug.js` | Public config and debug handlers |
@@ -109,11 +137,11 @@ Two devices in the same area can send at the same moment. The area document is t
 | `src/lib/device-log.js` | Per-device in-memory ring buffer for the debug endpoint |
 | `src/lib/http.js` | Shared reply builder and CORS preflight |
 | `src/lib/cosmos.js` | Cosmos DB client (managed identity in Azure, `az login` locally) |
-| `function.bicep` | Function App, Consumption plan, storage, Application Insights, Cosmos DB access |
+| `function.bicep` | Function App, Consumption plan, storage, Application Insights, Cosmos DB access, Web PubSub |
 | `deploy-function.ps1` | Creates the Azure resources and deploys the code |
 | `scripts/new-device-key.js` | Hashes a device secret, or creates a new one |
 | `scripts/send-test-reading.ps1` | Sends a reading the way a device would |
-| `test/ingest.test.js`, `test/stands.test.js` | 17 tests against an in-memory Cosmos DB (`npm test`) |
+| `test/*.test.js` | Tests against in-memory fakes of Cosmos DB and Web PubSub (`npm test`) |
 
 ## Deploy
 
@@ -177,7 +205,7 @@ When you're done debugging, run `./deploy-function.ps1 -QuietLogs`. Each request
 
 ## Cost
 
-The Consumption plan on Windows is the cheapest option at this load. 11 devices sending once a minute make about 475,000 calls a month. That fits within the plan's monthly free grant of 1 million executions and 400,000 GB-s, which applies to pay-as-you-go subscriptions and is shared by all function apps in the subscription. The Flex Consumption plan, which Microsoft now recommends for new apps, would cost roughly USD 3–4 a month for the same load, because it bills at least one second per execution. The storage account and the logs cost cents. The function stops any request after 30 s (`functionTimeout`), so a hanging call can't run up a bill.
+The Consumption plan on Windows is the cheapest option at this load. 11 devices sending once a minute make about 475,000 calls a month. That fits within the plan's monthly free grant of 1 million executions and 400,000 GB-s, which applies to pay-as-you-go subscriptions and is shared by all function apps in the subscription. The Flex Consumption plan, which Microsoft now recommends for new apps, would cost roughly USD 3–4 a month for the same load, because it bills at least one second per execution. The `broadcast` timer adds about 260,000 executions a month (one every 10 s), so the total of roughly 735,000 still fits. Web PubSub Free costs nothing; Standard S1 is about USD 1.60 a day per unit, so switch back to Free after the demo. The storage account and the logs cost cents. The function stops any request after 30 s (`functionTimeout`), so a hanging call can't run up a bill.
 
 The trade-off is cold starts: after a quiet period, the first request takes a few seconds. Devices don't notice, because they only wait for the answer.
 
@@ -214,5 +242,4 @@ NEXT_PUBLIC_API_URL=http://localhost:7071 pnpm --filter code/debug dev
 ## Not in here yet
 
 - `POST /api/v1/images` for cloud-counting devices (`drone`).
-- The Web PubSub broadcast for live updates in the app.
 - The hourly rollup job for weekday trends.
