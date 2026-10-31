@@ -1,0 +1,20 @@
+{
+  "name": "velo-stands-api",
+  "version": "0.1.0",
+  "private": true,
+  "description": "Velo Stands backend: Azure Functions that receive device readings and keep Cosmos DB up to date",
+  "main": "src/functions/*.js",
+  "engines": {
+    "node": ">=22"
+  },
+  "scripts": {
+    "start": "func start",
+    "test": "node --test test/*.test.js",
+    "new-key": "node scripts/new-device-key.js"
+  },
+  "dependencies": {
+    "@azure/cosmos": "^4.2.0",
+    "@azure/functions": "^4.6.0",
+    "@azure/identity": "^4.5.0"
+  }
+}
