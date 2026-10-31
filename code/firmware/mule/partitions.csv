@@ -1,0 +1,7 @@
+# Name,   Type, SubType, Offset,  Size, Flags
+# The YOLO model is embedded in the app, so we give factory the whole 8 MB
+# minus NVS. If we switch to loading the model from a spiffs partition
+# later, split this back into 2000K factory + 4 M coco_det.
+nvs,       data,  nvs,      0xA000,     20K,
+phy_init,  data,  phy,      0xF000,      4K,
+factory,   app,   factory,  0x10000,  8000K,
