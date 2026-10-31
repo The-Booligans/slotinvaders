@@ -3,7 +3,9 @@
 | Function | Trigger | Auth | |
 |---|---|---|---|
 | `readings` | `POST /api/v1/readings` | device key in `X-Api-Key` | Devices send their count |
+| `deviceConfig` | `GET /api/v1/device/config` | device key in `X-Api-Key` | The device's stand, slots and `config:` block |
 | `stands` | `GET /api/v1/stands[/<standId>]` | none (public, read-only) | Name, current and maximum occupancy per stand |
+| `config` | `GET /api/v1/config` | none (public, read-only) | The catalog without key hashes |
 | `negotiate` | `POST /api/v1/negotiate` | none | A receive-only WebSocket URL for the app |
 | `broadcast` | timer, every 10 s | – | Pushes every stand's status to all connected apps |
 | `pubsubEvents` | `POST /api/v1/pubsub/events` | called by Web PubSub | Sends the snapshot to each new connection |
@@ -17,11 +19,11 @@ POST https://<app>.azurewebsites.net/api/v1/readings
 X-Api-Key: vs_...
 Content-Type: application/json
 
-{ "occupied": 9, "seq": 1842, "measuredAt": "2026-11-02T07:00:00Z", "fw": "0.3.1", "rssi": -61 }
+{ "occupied": 7, "seq": 1842, "measuredAt": "2026-11-02T07:00:00Z", "fw": "0.3.1", "rssi": -61 }
 ```
 
 ```json
-202 { "device": "thor", "stand": "kaegen-hof-1", "occupied": 9, "standOccupied": 21, "slots": 40, "free": 19, "nextInSeconds": 60 }
+202 { "device": "thor", "stand": "flow-se-1", "occupied": 7, "standOccupied": 7, "slots": 10, "free": 3, "nextInSeconds": 60 }
 ```
 
 | Status | When |
@@ -45,18 +47,19 @@ Returns each stand's name, current occupancy and maximum occupancy. No key is ne
 | Request | Returns |
 |---|---|
 | `GET /api/v1/stands` | All active stands |
-| `GET /api/v1/stands?area=kaegen-hof` | The stands of one area (404 for an unknown area) |
-| `GET /api/v1/stands/kaegen-hof-1` | One stand (404 if unknown or retired) |
+| `GET /api/v1/stands?area=flow-main` | The stands of one area (404 for an unknown area) |
+| `GET /api/v1/stands/flow-main-1` | One stand (404 if unknown or retired) |
 
 ```json
 GET /api/v1/stands
 {
   "at": "2026-11-02T07:00:00.000Z",
   "stands": [
-    { "id": "kaegen-hof-1", "name": "Kägenstrasse 2 – Hof, Stand 1",
-      "areaId": "kaegen-hof", "areaName": "Kägenstrasse 2 – Hof",
+    { "id": "flow-main-1", "name": "Flow Main, Stand 1",
+      "areaId": "flow-main", "areaName": "Flow Main",
       "currentOccupancy": 21, "maxOccupancy": 40, "free": 19,
-      "stale": false, "updatedAt": "2026-11-02T06:59:30.000Z" }
+      "stale": false, "updatedAt": "2026-11-02T06:59:30.000Z" },
+    …
   ]
 }
 ```
@@ -76,8 +79,8 @@ Log lines look like this:
 ```
 [stands 5e1a77c0] -> GET /api/v1/stands from 198.51.100.23
 [stands 5e1a77c0] state loaded: 6 area documents (2.86 RU)
-[stands 5e1a77c0] cmr-ost-1: ling=0 (never reported) = 0 of 20 slots, 20 free (stale: ling never reported)
-[stands 5e1a77c0] kaegen-hof-1: thor=9 + probe=12 = 21 of 40 slots, 19 free
+[stands 5e1a77c0] flow-garage-north-1: ling=0 (never reported) = 0 of 20 slots, 20 free (stale: ling never reported)
+[stands 5e1a77c0] flow-main-1: ghost=9 + raven=12 = 21 of 40 slots, 19 free
 [stands 5e1a77c0] <- 200 in 22 ms, 5.9 RU | 6 stands, 1 stale
 ```
 
@@ -94,7 +97,7 @@ ws.onmessage = (e) => render(JSON.parse(e.data));
 Every message is the body of `GET /api/v1/stands` plus `"type": "stands"`:
 
 ```json
-{ "type": "stands", "at": "2026-11-02T07:00:00.000Z", "stands": [ { "id": "kaegen-hof-1", "currentOccupancy": 21, "maxOccupancy": 40, "free": 19, "stale": false, … } ] }
+{ "type": "stands", "at": "2026-11-02T07:00:00.000Z", "stands": [ { "id": "flow-main-1", "currentOccupancy": 21, "maxOccupancy": 40, "free": 19, "stale": false, … } ] }
 ```
 
 - **On connect:** Web PubSub posts a `connected` event to `/api/v1/pubsub/events`, and the function sends that connection the current snapshot, so the app doesn't wait for the next broadcast.
@@ -120,6 +123,7 @@ Two devices in the same area can send at the same moment. The area document is t
 |---|---|
 | `src/functions/readings.js` | Registers `POST /api/v1/readings` |
 | `src/functions/stands.js` | Registers `GET /api/v1/stands/{standId?}` |
+| `src/functions/device-config.js` | Registers `GET /api/v1/device/config` |
 | `src/functions/config.js` | Registers `GET /api/v1/config` |
 | `src/functions/debug.js` | Registers `GET /api/v1/debug/devices` and `GET /api/v1/debug/devices/{deviceId}/logs` |
 | `src/functions/push.js` | Registers `POST /api/v1/negotiate`, the `broadcast` timer and `POST /api/v1/pubsub/events` |
@@ -133,6 +137,7 @@ Two devices in the same area can send at the same moment. The area document is t
 | `src/lib/debug.js` | Public config and debug handlers |
 | `src/lib/catalog.js` | Catalog cache and key check (SHA-256, compared in constant time) |
 | `src/lib/occupancy.js` | Stand totals and free slots |
+| `src/lib/device-config.js` | The device's own config, looked up by its key |
 | `src/lib/validate.js` | Body checks |
 | `src/lib/device-log.js` | Per-device in-memory ring buffer for the debug endpoint |
 | `src/lib/http.js` | Shared reply builder and CORS preflight |
@@ -174,18 +179,18 @@ Every request writes lines like these:
 
 ```
 [readings 7f3c9a12] -> POST /api/v1/readings from 198.51.100.23
-[readings 7f3c9a12] catalog loaded: 6 stands, 11 devices, 11 open assignments (3.04 RU)
-[readings 7f3c9a12] device thor "Kägenstrasse Hof – ToF, near row" (vl53l5cx-array, mode device) -> stand kaegen-hof-1 "Kägenstrasse 2 – Hof, Stand 1" (40 slots) in area kaegen-hof
-[readings 7f3c9a12] body: occupied=9 seq=1842 measuredAt=2026-11-02T07:00:00.000Z fw=0.3.1 rssi=-61
+[readings 7f3c9a12] catalog loaded: 6 stands, 10 devices, 10 open assignments (3.04 RU)
+[readings 7f3c9a12] device thor "Flow South East – LiDAR, far row" (lidar, mode device) -> stand flow-se-1 "Flow South East, Stand 1" (10 slots) in area flow-se
+[readings 7f3c9a12] body: occupied=7 seq=1842 measuredAt=2026-11-02T07:00:00.000Z fw=0.3.1 rssi=-61
 [readings 7f3c9a12] previous: none, this is the device's first reading
-[readings 7f3c9a12] stand kaegen-hof-1: thor=9 + probe=12 = 21 of 40 slots -> 19 free
-[readings 7f3c9a12] state of area kaegen-hof updated (attempt 1)
+[readings 7f3c9a12] stand flow-se-1: thor=7 = 7 of 10 slots -> 3 free
+[readings 7f3c9a12] state of area flow-se updated (attempt 1)
 [readings 7f3c9a12] reading c0a424cb-adc4-43d6-82b0-65193b2ede7b stored in history
-[readings 7f3c9a12] <- 202 in 48 ms, 22.14 RU | thor -> kaegen-hof-1: 9 bikes, stand 21/40, 19 free
+[readings 7f3c9a12] <- 202 in 48 ms, 22.14 RU | thor -> flow-se-1: 7 bikes, stand 7/10, 3 free
 
 WARN [readings b04e1d77] <- 429 in 9 ms, 1 RU | device thor: last reading only 1200 ms ago
 WARN [readings c2a81f05] <- 401 in 2 ms, 0 RU | unknown key (hash sha256:28e0f7ef...)
-WARN [readings d9e3b6a0] <- 422 in 3 ms, 0 RU | device probe: occupied (44) is more than the stand's 40 slots
+WARN [readings d9e3b6a0] <- 422 in 3 ms, 0 RU | device probe: occupied (34) is more than the stand's 30 slots
 ```
 
 The 8 characters after `readings` are the start of the invocation ID, so the lines of one request belong together. API keys are never logged, only the start of an unknown key's hash.
@@ -205,7 +210,7 @@ When you're done debugging, run `./deploy-function.ps1 -QuietLogs`. Each request
 
 ## Cost
 
-The Consumption plan on Windows is the cheapest option at this load. 11 devices sending once a minute make about 475,000 calls a month. That fits within the plan's monthly free grant of 1 million executions and 400,000 GB-s, which applies to pay-as-you-go subscriptions and is shared by all function apps in the subscription. The Flex Consumption plan, which Microsoft now recommends for new apps, would cost roughly USD 3–4 a month for the same load, because it bills at least one second per execution. The `broadcast` timer adds about 260,000 executions a month (one every 10 s), so the total of roughly 735,000 still fits. Web PubSub Free costs nothing; Standard S1 is about USD 1.60 a day per unit, so switch back to Free after the demo. The storage account and the logs cost cents. The function stops any request after 30 s (`functionTimeout`), so a hanging call can't run up a bill.
+The Consumption plan on Windows is the cheapest option at this load. The 10 devices in the catalog, sending once a minute, make about 432,000 calls a month. That fits within the plan's monthly free grant of 1 million executions and 400,000 GB-s, which applies to pay-as-you-go subscriptions and is shared by all function apps in the subscription. The Flex Consumption plan, which Microsoft now recommends for new apps, would cost roughly USD 3–4 a month for the same load, because it bills at least one second per execution. The `broadcast` timer adds about 260,000 executions a month (one every 10 s), so the total of roughly 690,000 still fits. `thor` is configured to report every 5 s, which adds about 475,000 more a month and takes the total to about 1.17 million, above the free grant; set its `reportIntervalMs` back to 60000 after testing. Web PubSub Free costs nothing; Standard S1 is about USD 1.60 a day per unit, so switch back to Free after the demo. The storage account and the logs cost cents. The function stops any request after 30 s (`functionTimeout`), so a hanging call can't run up a bill.
 
 The trade-off is cold starts: after a quiet period, the first request takes a few seconds. Devices don't notice, because they only wait for the answer.
 

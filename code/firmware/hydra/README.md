@@ -11,7 +11,8 @@ frame stays in RAM; only the count leaves the device.
 one top-right of the row, each angled **≈ 30°** downward into the stand so
 the two viewpoints cross-check and together cover every bay. `hydra` and its
 twin `mule` are built identically; which one lands where is set by the
-`stand:` on each device in `stands.yaml`.
+`stand:` on each device in `stands.yaml`. In the catalog both watch
+`flow-sw-1` (Flow South West, 20 slots), the two-camera stand.
 
 Everything else — authentication, endpoints, error codes — matches
 [`code/firmware/README.md`](../README.md).
@@ -30,7 +31,7 @@ Requirements:
 Build and flash:
 
 ```sh
-cd code/firmware/mule
+cd code/firmware/hydra
 ./start.sh                        # default port /dev/cu.usbmodem1101
 ./start.sh /dev/cu.usbmodem101    # explicit port
 ```
@@ -40,7 +41,7 @@ The first build downloads `espressif/coco_detect`, `espressif/esp-dl` and
 
 ## Credentials
 
-Copy the template and fill in Wi-Fi + the device key for `mule`:
+Copy the template and fill in Wi-Fi + the device key for `hydra`:
 
 ```sh
 cp secrets.example.h secrets.h
@@ -53,23 +54,25 @@ cp secrets.example.h secrets.h
 ```
 
 The hash in [`code/backend/velo-stands-cosmos/stands.yaml`](../../backend/velo-stands-cosmos/stands.yaml)
-under `devices` → `id: mule` must match the SHA-256 of the key you flash.
+under `devices` → `id: hydra` must match the SHA-256 of the key you flash.
 
 ## Runtime knobs
 
 Fetched once on boot (and after every report) from
-`GET /api/v1/device/config`. Missing keys keep the compile-time default:
+`GET /api/v1/device/config`. Missing keys keep the compile-time default.
+`hydra` has no `config:` block in `stands.yaml` yet, so it runs on these
+defaults:
 
 | Key                  | Default | Range          | What |
 |----------------------|---------|----------------|------|
-| `reportIntervalMs`   | 10000   | 1 000 … 600 000 | How often to POST a reading. The ingest endpoint rate-limits at 1 req / 5 s, so values below 5 000 will see 429s. |
+| `reportIntervalMs`   | 10000   | 1 000 … 600 000 | How often to POST a reading. The ingest endpoint rate-limits at 1 req / 2 s, so values below 2 000 will see 429s. |
 | `minScore`           | 0.35    | 0.0 … 1.0       | Confidence threshold for a detection to count as a bike. |
 
 Stand-level fields outside the `config:` block are honoured too:
 
 | Key     | Default | What |
 |---------|---------|------|
-| `slots` | 40      | Caps the reported count so the backend never 422s a value above the stand's capacity. |
+| `slots` | 40      | Caps the reported count so the backend never 422s a value above the stand's capacity. `hydra`'s stand `flow-sw-1` has 20. |
 
 ## What it does on boot
 
@@ -88,14 +91,14 @@ Then forever, for each frame:
 A sample serial log:
 
 ```
-I (3421) mule: ip 192.168.1.42
-I (3620) mule: config: reportIntervalMs=10000 minScore=0.35 maxSlots=40
-I (4210) mule: camera ok, loading YOLO11…
-I (6002) mule: detector ready
-I (7020) mule: bikes=3
-I (8041) mule: bikes=3
-I (18045) mule: report seq=1 occupied=3  HTTP 202  212 ms  {"device":"mule","nextInSeconds":10}
-I (18260) mule: debug jpeg 9872 B  HTTP 202  195 ms
+I (3421) hydra: ip 192.168.1.42
+I (3620) hydra: config: reportIntervalMs=10000 minScore=0.35 maxSlots=20
+I (4210) hydra: camera ok, loading YOLO11…
+I (6002) hydra: detector ready
+I (7020) hydra: bikes=3
+I (8041) hydra: bikes=3
+I (18045) hydra: report seq=1 occupied=3  HTTP 202  212 ms  {"device":"hydra","stand":"flow-sw-1","occupied":3,"standOccupied":5,"slots":20,"free":15,"nextInSeconds":60}
+I (18260) hydra: debug jpeg 9872 B  HTTP 202  195 ms
 ```
 
 ## When something looks wrong

@@ -133,7 +133,10 @@ export default function Page() {
           <div className="container">
             <span className="eyebrow">Live counts</span>
             <h2>Every stand on the campus</h2>
-            <p className="lead">Six places to lock up a bike, updated as the day fills them.</p>
+            <p className="lead">
+              Six stands, one in each parking area, 150 slots in total. Ten sensors keep the
+              counts current as the day fills them.
+            </p>
             <div className="stands-wrap">
               <StandList />
             </div>
@@ -200,31 +203,36 @@ export default function Page() {
         <section className="section" id="device">
           <div className="container">
             <span className="eyebrow">The thing on the stand</span>
-            <h2>ESP32, solar-powered, LoRaWAN</h2>
+            <h2>LiDAR or on-device YOLO, on an ESP32</h2>
             <p className="lead">
-              A small sealed node per stand. No wiring, no WiFi, nothing to service.
+              Ten small nodes on six stands. Each one counts on the board and sends a single
+              number.
             </p>
 
             <div className="device-grid">
               <ul className="bullet-list">
                 <li className="bullet">
                   <span className="bullet__num">01</span>
-                  <span className="bullet__text">ESP32 microcontroller counts bikes locally</span>
+                  <span className="bullet__text">
+                    M5Stack AtomS3 (ESP32-S3) counts the bikes on the device
+                  </span>
                 </li>
                 <li className="bullet">
                   <span className="bullet__num">02</span>
-                  <span className="bullet__text">Weatherproof casing, mounted on each stand</span>
+                  <span className="bullet__text">
+                    LiDAR — an RPLidar C1 sweeps the row by depth, day or night. 5 in use
+                  </span>
                 </li>
                 <li className="bullet">
                   <span className="bullet__num">03</span>
                   <span className="bullet__text">
-                    Battery + solar panel — zero wiring, zero maintenance
+                    Camera — an AtomS3R-CAM runs YOLO11n locally; the frame stays in RAM. 5 in use
                   </span>
                 </li>
                 <li className="bullet">
                   <span className="bullet__num">04</span>
                   <span className="bullet__text">
-                    Reports via LoRaWAN — no WiFi needed, long range, tiny power footprint
+                    Reports the count over Wi-Fi and HTTPS every few seconds
                   </span>
                 </li>
               </ul>
@@ -312,7 +320,7 @@ export default function Page() {
         <section className="section section--alt" id="architecture">
           <div className="container">
             <span className="eyebrow">Under the hood</span>
-            <h2>Six sensors → the cloud → every open client</h2>
+            <h2>Ten sensors → the cloud → every open client</h2>
             <p className="lead">
               A classic edge-to-cloud fan-out. Nothing exotic, nothing proprietary.
             </p>
@@ -370,7 +378,7 @@ export default function Page() {
                       fontWeight="600"
                       fill="#000"
                     >
-                      6 ESP32 nodes
+                      10 ESP32 nodes
                     </text>
                     <text
                       x="110"
@@ -380,15 +388,12 @@ export default function Page() {
                       fontSize="11.5"
                       fill="#525E6B"
                     >
-                      one per bike stand
+                      on 6 bike stands
                     </text>
                     <g fill="#22D3EE">
-                      <rect x="40" y="166" width="6" height="6" />
-                      <rect x="52" y="166" width="6" height="6" />
-                      <rect x="64" y="166" width="6" height="6" />
-                      <rect x="76" y="166" width="6" height="6" />
-                      <rect x="88" y="166" width="6" height="6" />
-                      <rect x="100" y="166" width="6" height="6" />
+                      {Array.from({ length: 10 }, (_, i) => (
+                        <rect key={i} x={50 + i * 12} y="166" width="6" height="6" />
+                      ))}
                     </g>
                   </g>
 
@@ -410,7 +415,7 @@ export default function Page() {
                     fill="#525E6B"
                     letterSpacing="1"
                   >
-                    LoRaWAN
+                    WI-FI
                   </text>
 
                   <g>
@@ -444,7 +449,7 @@ export default function Page() {
                       fontWeight="600"
                       fill="#000"
                     >
-                      LoRaWAN Gateway
+                      Campus Wi-Fi
                     </text>
                     <text
                       x="340"
@@ -454,7 +459,7 @@ export default function Page() {
                       fontSize="11.5"
                       fill="#525E6B"
                     >
-                      campus coverage
+                      2.4 GHz · TLS
                     </text>
                   </g>
 
@@ -520,7 +525,7 @@ export default function Page() {
                       fontSize="11.5"
                       fill="#525E6B"
                     >
-                      Node 22 · serverless
+                      Node 22 · /v1/readings
                     </text>
                   </g>
 
@@ -575,7 +580,7 @@ export default function Page() {
                       fontSize="11.5"
                       fill="#525E6B"
                     >
-                      + Web PubSub
+                      + Web PubSub · 10 s
                     </text>
                   </g>
 
@@ -647,8 +652,10 @@ export default function Page() {
                 </svg>
               </div>
               <p className="arch-caption">
-                Devices publish counts over LoRaWAN. The backend fans updates out over WebSockets in
-                under a second. See <code>architecture.md</code> for details.
+                Devices POST their count over Wi-Fi and HTTPS. Cosmos DB keeps the stand catalog,
+                the latest count per device and 30 days of readings. Web PubSub pushes every
+                stand&rsquo;s status to open clients every 10 seconds. See{" "}
+                <code>architecture.md</code> for details.
               </p>
             </div>
           </div>
@@ -662,22 +669,23 @@ export default function Page() {
             <div className="privacy-grid">
               <div className="privacy-block">
                 <h3>
-                  <span className="label">On the device</span> Counting without cameras
+                  <span className="label">On the device</span> Counting on the board
                 </h3>
                 <p>
-                  Non-image sensors (ToF arrays, LiDAR, mmWave radar, ultrasonic) or on-device CV.
-                  Only one integer — how many bikes the stand sees — ever leaves the device. There
-                  is nothing to lose or leak.
+                  LiDAR measures depth, not light. The cameras run YOLO on the board and keep the
+                  frame in RAM. Only one integer — how many bikes the device sees — is sent as a
+                  reading.
                 </p>
               </div>
               <div className="privacy-block">
                 <h3>
-                  <span className="label">On the wire</span> No image endpoint
+                  <span className="label">In the cloud</span> Counts only
                 </h3>
                 <p>
-                  The backend accepts counts, not pictures. There is no code path that uploads a
-                  frame for recognition, so even a compromised device cannot send one somewhere it
-                  would be stored or seen.
+                  The readings API accepts counts and rejects unknown fields. Cosmos DB holds the
+                  stand catalog, counts and timestamps — no images, no people, no bike identities.
+                  A camera&rsquo;s last frame can go to the team&rsquo;s debug viewer, held in
+                  memory only and never stored.
                 </p>
               </div>
             </div>

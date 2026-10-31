@@ -36,8 +36,9 @@
 > our company site?
 
 Slot Invaders turns the six bike parking areas on the Endress+Hauser Reinach
-campus into live counters. Sensors at each stand report how many bikes they
-see; the app shows you where to park before you arrive.
+campus into live counters: six stands with 150 slots, watched by ten sensors.
+Each sensor reports how many bikes it sees; the app shows you where to park
+before you arrive.
 
 ## Live environments
 
@@ -62,6 +63,26 @@ or point cloud never leaves the stand.
   into the stand, both running YOLO11 locally. The frame stays in RAM; only
   the count is POSTed.
 
+### What is deployed
+
+The catalog in Cosmos DB, loaded from
+[`code/backend/velo-stands-cosmos/stands.yaml`](code/backend/velo-stands-cosmos/stands.yaml):
+
+| Area | Kind | Stand | Slots | Devices |
+| ---- | ---- | ----- | ----: | ------- |
+| Flow Main | covered | `flow-main-1` | 40 | `ghost` LiDAR · `raven` YOLO camera |
+| Sternenhof | covered | `sternenhof-1` | 30 | `medic` LiDAR · `reaper` YOLO camera |
+| Flow Garage South | inside | `flow-garage-south-1` | 30 | `roach` LiDAR · `probe` YOLO camera |
+| Flow South West | covered | `flow-sw-1` | 20 | `mule` + `hydra`, two YOLO cameras |
+| Flow South East | covered | `flow-se-1` | 10 | `thor` LiDAR |
+| Flow Garage North | covered | `flow-garage-north-1` | 20 | `ling` LiDAR |
+| **6 areas** | | **6 stands** | **150** | **10 devices: 5 LiDAR, 5 YOLO cameras** |
+
+Three stands pair a LiDAR with a camera, Flow South West has the two-camera
+setup, and Flow South East and Flow Garage North rely on one LiDAR each. The
+slot counts are placeholders until Endress+Hauser confirms the real capacities,
+and no stand has a GPS position yet.
+
 Details and numbers in
 [`documentation/sensor-evaluation.md`](documentation/sensor-evaluation.md).
 
@@ -69,16 +90,18 @@ Details and numbers in
 
 ```
  ┌─ Field ──────────────────────┐      ┌─ Azure ─────────────────┐      ┌─ Clients ──┐
- │ LiDAR  (1× per stand)        │─────▶│ Functions · Cosmos DB   │─────▶│ PWA        │
- │ or on-device YOLO (2× per    │      │ Web PubSub              │      │ iOS/Android│
- │   stand, 30° top-L + top-R)  │      │                         │      │ Landing    │
+ │ 5× LiDAR                     │─────▶│ Functions · Cosmos DB   │─────▶│ PWA        │
+ │ 5× on-device YOLO camera     │      │ Web PubSub              │      │ iOS/Android│
+ │   on 6 stands, 150 slots     │      │                         │      │ Landing    │
  │   ─────  integer only  ────▶ │      │                         │      │            │
  └──────────────────────────────┘      └─────────────────────────┘      └────────────┘
 ```
 
-Devices `POST /v1/readings` with their count. Free slots = stand slots − sum
-of device counts. Updates go out via WebSockets, so every open client refreshes
-within about a second.
+Devices `POST /v1/readings` with their count over Wi-Fi and HTTPS. Free slots
+= stand slots − sum of device counts. Cosmos DB holds the catalog (areas,
+stands, devices, assignments), the latest count per device and 30 days of
+readings. A timer pushes every stand's status over WebSockets every 10 s, so
+every open client is at most about 10 s behind.
 
 See [`documentation/architecture.md`](documentation/architecture.md) for the
 full picture, data model and API.
@@ -117,7 +140,7 @@ After changing app code, repeat steps 3–5 so Android gets the latest build.
 
 - **Front ends** — Next.js (static export) · Serwist (PWA) · Capacitor (iOS/Android) · shadcn/ui · Tailwind · three.js + R3F
 - **Backend** — Azure Functions (Node 22, TypeScript) · Cosmos DB serverless · Web PubSub
-- **Counting** — RPLidar C1 on an AtomS3 (default) · AtomS3R-CAM-M12 running ESP-DL YOLO11n on-device (two per stand, top-L + top-R at 30°)
+- **Counting** — RPLidar C1 on an AtomS3 (5 devices) · AtomS3R-CAM-M12 running ESP-DL YOLO11n on-device (5 devices)
 - **Shared** — Zod schemas, TypeScript contracts, `computeViews` pure function
 - **Tooling** — pnpm workspaces · Oxlint · Oxfmt · Vitest · Terraform
 
@@ -126,7 +149,7 @@ After changing app code, repeat steps 3–5 so Android gets the latest build.
 - **Event**: BaselHack 2026 · Fri 30 Oct – Sun 1 Nov 2026 · 48h
 - **Challenge owner**: Endress+Hauser
 - **Site**: Reinach campus — 2 property zones, 6 bike parking areas
-- **Hardware provided**: 10× ESP32 cameras with boards (we use them for on-device CV)
+- **Hardware provided**: 10× ESP32 cameras with boards (we use five of them for on-device CV)
 
 Full brief in [`documentation/challenge-brief.md`](documentation/challenge-brief.md).
 Hackathon rules and judging notes in

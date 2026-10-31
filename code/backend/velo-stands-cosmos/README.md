@@ -8,7 +8,7 @@ Creates the serverless Cosmos DB for the Velo Stands backend and, optionally, lo
 | `deploy-cosmos.sh` | The same script for Bash (Linux, macOS, Cloud Shell). |
 | `cosmos.bicep` | The infrastructure as code: account, database, four containers and data access. |
 | `sync-catalog.mjs` | Checks a stands file and loads it into the `catalog` container. |
-| `stands.yaml` | The real stands file: 6 areas, 6 stands, 11 devices. The scripts load it by default. |
+| `stands.yaml` | The real stands file: 6 areas, 6 stands (150 slots), 10 devices (5 LiDAR, 5 YOLO cameras). The scripts load it by default. |
 | `stands.sample.yaml` | Small example with one area, one stand and two devices, including a device swap. |
 | `package.json` | Dependencies of the sync script. |
 
@@ -61,7 +61,7 @@ To check a stands file without writing anything, run `npm install` and then `nod
 - **Continuous 7-day backup.** It has no backup storage charge and gives point-in-time restore. You only pay if you restore.
 - **Only the queried fields are indexed** in the write-heavy containers, because every indexed field costs request units on each write.
 
-At 10 devices sending once a minute, expect roughly USD 2–3 a month. That figure assumes about 20 request units per reading, for the insert plus the state update.
+At 10 devices sending once a minute, expect roughly USD 2–3 a month. That figure assumes about 20 request units per reading, for the insert plus the state update. `thor` is configured to report every 5 s, so it sends 12 times as many readings as a device on the one-minute cadence; raise its `reportIntervalMs` once testing is done.
 
 ## Containers
 
@@ -70,7 +70,9 @@ At 10 devices sending once a minute, expect roughly USD 2–3 a month. That figu
 | `catalog` | `/siteId` | never | site, area, stand, device and device assignment (`type` tells them apart) |
 | `readings` | `/standId` | 30 days | accepted reading (an occupancy event, never updated) |
 | `state` | `/areaId` | never | area, holding the latest count of each of its devices |
-| `rollups` | `/standId` | never | stand and hour |
+| `rollups` | `/standId` | never | stand and hour (empty until the hourly job is built) |
+
+What the sync of `stands.yaml` puts in `catalog` today: 1 site (`reinach`), 6 areas, 6 stands, 10 devices and 10 open assignments (from each device's `stand:`, starting 2026-10-31). It also creates an empty `state` document for each of the 6 areas.
 
 Partition keys can't be changed later, so changing one means a new container. Indexes, expiry and access can be changed by editing `cosmos.bicep` and running the script again. Containers can't be created with account keys. That's deliberate: the template is the only place where they change.
 
@@ -78,29 +80,36 @@ Partition keys can't be changed later, so changing one means a new container. In
 
 ```jsonc
 // catalog: run the sync with --dry-run to see all types
-{ "id": "stand:fsw-1", "type": "stand", "siteId": "reinach", "standId": "fsw-1", "areaId": "flow-sw",
-  "name": "Flow South West – Stand 1", "slots": 20,
-  "location": { "type": "Point", "coordinates": [7.59, 47.495] },          // GeoJSON: [lon, lat]
-  "locationNote": "…", "retiredAt": null }
-{ "id": "assignment:cam-01:2026-10-31T00:00:00.000Z", "type": "assignment", "siteId": "reinach",
-  "deviceId": "cam-01", "standId": "fsw-1", "areaId": "flow-sw",
-  "validFrom": "2026-10-31T00:00:00.000Z", "validTo": null }
+{ "id": "stand:flow-sw-1", "type": "stand", "siteId": "reinach", "standId": "flow-sw-1", "areaId": "flow-sw",
+  "name": "Flow South West, Stand 1", "slots": 20,
+  "location": null,                       // GeoJSON once known: { "type": "Point", "coordinates": [lon, lat] }
+  "locationNote": null, "retiredAt": null }
+{ "id": "device:thor", "type": "device", "siteId": "reinach", "deviceId": "thor",
+  "name": "Flow South East – LiDAR, far row", "hardware": "lidar", "mode": "device",
+  "keyHash": "sha256:2402…b845", "serial": null, "status": "active",
+  "config": { "slots": 10, "freeMm": 600, "bikeRangeMinMm": 100, "bikeRangeMaxMm": 1000,
+              "emaAlpha": 0.3, "stableLatch": 3, "calibrationMs": 8000, "reportIntervalMs": 5000 } }
+{ "id": "assignment:mule:2026-10-31T00:00:00.000Z", "type": "assignment", "siteId": "reinach",
+  "deviceId": "mule", "standId": "flow-sw-1", "areaId": "flow-sw",
+  "validFrom": "2026-10-31T00:00:00.000Z", "validTo": null, "note": null }
 
-// readings: written by the ingest Functions
-{ "id": "<uuid>", "standId": "fsw-1", "areaId": "flow-sw", "deviceId": "cam-01", "source": "device",
+// readings: written by the ingest Function
+{ "id": "<uuid>", "standId": "flow-sw-1", "areaId": "flow-sw", "deviceId": "mule", "source": "device",
   "occupied": 9, "seq": 1842, "receivedAt": "2026-10-31T07:42:11Z", "measuredAt": "2026-10-31T07:42:10Z",
-  "fw": "0.3.1", "rssi": -61 }
-  // cloud devices also: "deviceCount", "model", "meanConfidence"
+  "fw": "0.3.1", "rssi": -61, "slots": 20, "standOccupied": 17, "standFree": 3 }
 
-// state: id = areaId. Ingest patches /devices/<deviceId>, guarded by seq.
+// state: id = areaId. Ingest replaces the document with an ETag check and retries on conflict.
 { "id": "flow-sw", "areaId": "flow-sw", "updatedAt": "…",
-  "devices": { "cam-01": { "standId": "fsw-1", "occupied": 9, "source": "device", "seq": 1842, "at": "…" } } }
+  "devices": { "mule":  { "standId": "flow-sw-1", "occupied": 9, "source": "device", "seq": 1842, "at": "…" },
+               "hydra": { "standId": "flow-sw-1", "occupied": 8, "source": "device", "seq": 977,  "at": "…" } },
+  "stands":  { "flow-sw-1": { "slots": 20, "occupied": 17, "free": 3, "devices": ["mule", "hydra"],
+                              "missingDevices": [], "staleDevices": [], "at": "…" } } }
 
-// rollups: id = "<standId>:<hourStartUtc>", written by the hourly timer
-{ "id": "fsw-1:2026-11-02T07:00:00Z", "standId": "fsw-1", "areaId": "flow-sw",
+// rollups: id = "<standId>:<hourStartUtc>", to be written by the hourly timer (not built yet)
+{ "id": "flow-sw-1:2026-11-02T07:00:00Z", "standId": "flow-sw-1", "areaId": "flow-sw",
   "hourStartUtc": "2026-11-02T07:00:00Z", "localDate": "2026-11-02", "localHour": 8, "dayOfWeek": 1,
   "isWorkday": true, "slots": 20, "avgOccupied": 14.3, "minOccupied": 9, "maxOccupied": 20,
-  "avgOccupancyRate": 0.715, "minutesFull": 12, "coverage": 1.0, "devices": ["cam-01", "cam-02"] }
+  "avgOccupancyRate": 0.715, "minutesFull": 12, "coverage": 1.0, "devices": ["mule", "hydra"] }
 ```
 
 The sync creates an empty `state` document for each area, because a patch needs an existing document. When a device is retired or moved, the sync also removes it from its area's `state` document.
@@ -115,7 +124,7 @@ The sync creates an empty `state` document for each area, because a patch needs 
 
 A replacement device gets its own id and key. In the stands file:
 
-1. Add the new device (`pnpm device:add cam-03 …`).
+1. Add the new device with a fresh key (`node ../velo-stands-functions/scripts/new-device-key.js` prints a secret and its `keyHash`).
 2. Set the old device to `status: retired` and add `to:` to its assignment.
 3. Add an assignment for the new device that starts on the same date.
 4. Run `./deploy-cosmos.ps1 -Sync` (or `./deploy-cosmos.sh --sync`) again.

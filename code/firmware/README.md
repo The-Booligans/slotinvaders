@@ -4,11 +4,13 @@ Every sketch in this directory is a Slot Invaders bike-counting device. They all
 
 ## Devices in this folder
 
-| Dir | Hardware | What it sends | Mode |
+| Dir | Hardware | What it sends | Catalog device and stand |
 |---|---|---|---|
-| [`hydra/`](hydra) | AtomS3R-CAM-M12 (ESP32-S3 + OV3660) | Raw JPEG → debug viewer | debug only |
-| [`thor/`](thor) | AtomS3 + RPLIDAR C1 | Integer count + SVG preview | `device` |
-| [`mule/`](mule) | AtomS3R-CAM-M12 (ESP32-S3 + OV3660) | Integer count (YOLO on-device) | `device` |
+| [`thor/`](thor) | AtomS3 + RPLIDAR C1 (`hardware: lidar`) | Integer count + SVG preview | `thor` → `flow-se-1` (Flow South East, 10 slots) |
+| [`mule/`](mule) | AtomS3R-CAM-M12 (ESP32-S3 + OV3660, `hardware: yolo`) | Integer count (YOLO on-device) + JPEG → debug viewer | `mule` → `flow-sw-1` (Flow South West, 20 slots) |
+| [`hydra/`](hydra) | AtomS3R-CAM-M12 (ESP32-S3 + OV3660, `hardware: yolo`) | Integer count (YOLO on-device) + JPEG → debug viewer | `hydra` → `flow-sw-1`, the second camera next to `mule` |
+
+All three are `mode: device` and `status: active` in the catalog. The catalog lists ten devices in total: five LiDAR (`ghost`, `medic`, `roach`, `thor`, `ling`) and five YOLO cameras (`raven`, `reaper`, `probe`, `mule`, `hydra`). The others run the `thor` or `mule`/`hydra` firmware with their own key. See the table in [`documentation/architecture.md`](../../documentation/architecture.md#what-is-deployed).
 
 Each folder has its own README with the wiring, boot log and tuning knobs.
 
@@ -70,14 +72,14 @@ X-Api-Key: vs_3q9Z…
 200
 {
   "device": "thor",
-  "stand": "kaegen-hof-1",
-  "slots": 40,
-  "reportIntervalSeconds": 60,
-  "config": { "slots": 8, "freeMm": 850, "stableLatch": 3, ... }
+  "stand": "flow-se-1",
+  "slots": 10,
+  "config": { "slots": 10, "freeMm": 600, "bikeRangeMinMm": 100, "bikeRangeMaxMm": 1000,
+              "emaAlpha": 0.3, "stableLatch": 3, "calibrationMs": 8000, "reportIntervalMs": 5000 }
 }
 ```
 
-Devices fetch this once on boot and apply the keys they recognise; missing keys keep the firmware's defaults. `thor` uses it to pull thresholds and slot count without reflashing. `hydra` and `mule` ignore it.
+`config` is the device's `config:` block from `stands.yaml`, verbatim; a device without one gets `{}`. Devices fetch this on boot and apply the keys they recognise; missing keys keep the firmware's defaults. `thor` uses it to pull thresholds and slot count without reflashing. `hydra` and `mule` read `reportIntervalMs` and `minScore` from `config` and cap their count at the stand's `slots`; neither has a `config:` block in the catalog yet, so they run on their defaults.
 
 ### `POST /api/v1/readings`  — count (JSON)
 
@@ -86,11 +88,11 @@ POST /api/v1/readings
 X-Api-Key: vs_3q9Z…
 Content-Type: application/json
 
-{ "occupied": 9, "seq": 1842, "measuredAt": "2026-10-31T07:42:10Z", "fw": "0.3.1", "rssi": -61 }
+{ "occupied": 7, "seq": 1842, "measuredAt": "2026-10-31T07:42:10Z", "fw": "0.3.1", "rssi": -61 }
 ```
 
 ```json
-202 { "device": "thor", "nextInSeconds": 60 }
+202 { "device": "thor", "stand": "flow-se-1", "occupied": 7, "standOccupied": 7, "slots": 10, "free": 3, "nextInSeconds": 60 }
 ```
 
 The only required fields are `occupied` and `seq`. `fw`, `rssi` and `measuredAt` are optional diagnostics. **No field may carry an image**; unknown fields are rejected (422).
@@ -118,7 +120,7 @@ Keeps the latest frame per device in backend memory (not Cosmos). Served back by
 | 409 | Device is not assigned to a stand |
 | 413 / 415 | Debug image too large, or not JPEG / PNG / SVG |
 | 422 | JSON invalid: negative count, count above the stand's slots, or unknown field |
-| 429 | More than one request within 5 s from the same device |
+| 429 | More than one reading within 2 s from the same device (`Retry-After: 2`) |
 
 ## Flashing
 

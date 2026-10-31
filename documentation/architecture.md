@@ -26,6 +26,22 @@ A stand has slots, and one or more devices watch them. We offer two sensor types
 
 Both solutions use the same `POST /v1/readings` path and the same per-device API key.
 
+### What is deployed
+
+This is the catalog as it stands in Cosmos DB (loaded from `stands.yaml`):
+
+| Area | Kind | Stand | Slots | Devices |
+| ---- | ---- | ----- | ----: | ------- |
+| Flow Main | covered | `flow-main-1` | 40 | `ghost` LiDAR · `raven` YOLO camera |
+| Sternenhof | covered | `sternenhof-1` | 30 | `medic` LiDAR · `reaper` YOLO camera |
+| Flow Garage South | inside | `flow-garage-south-1` | 30 | `roach` LiDAR · `probe` YOLO camera |
+| Flow South West | covered | `flow-sw-1` | 20 | `mule` + `hydra`, two YOLO cameras |
+| Flow South East | covered | `flow-se-1` | 10 | `thor` LiDAR |
+| Flow Garage North | covered | `flow-garage-north-1` | 20 | `ling` LiDAR |
+| **6 areas** | | **6 stands** | **150** | **10 devices: 5 LiDAR, 5 YOLO cameras** |
+
+Three stands combine one LiDAR with one camera, and the backend adds up their counts. Flow South West uses the two-camera setup described above. Slot counts are placeholders until Endress+Hauser confirms the real capacities, and no stand has a GPS `location` yet. Every device is `mode: device` and `status: active`; the assignments come from `devices[].stand` and start on 2026-10-31. Only `thor` has a `config:` block so far.
+
 The first version only covers the API, the shared contracts, the tools and an unstyled PWA. See [build-v1.md](build-v1.md).
 
 ## Decisions
@@ -53,8 +69,8 @@ flowchart LR
   end
   C[("velo-stands-cosmos/stands.yaml<br/>areas · stands · devices")]
   subgraph Azure
-    F["Azure Functions<br/>POST /v1/readings<br/>GET /v1/device/config<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
-    DB[("Cosmos DB serverless<br/>state · readings")]
+    F["Azure Functions<br/>POST /v1/readings<br/>GET /v1/device/config<br/>GET /v1/stands<br/>GET /v1/config<br/>POST /v1/negotiate"]
+    DB[("Cosmos DB serverless<br/>catalog · state · readings · rollups")]
     P["Web PubSub<br/>hub: occupancy"]
   end
   A["App<br/>PWA · iOS · Android"]
@@ -62,7 +78,7 @@ flowchart LR
 
   D -- "HTTPS + X-Api-Key<br/>count only" --> F
   S --> F
-  C -. bundled at deploy .-> F
+  C -. "deploy-cosmos -Sync" .-> DB
   F --> DB
   F == broadcast ==> P
   P == wss ==> A
@@ -77,9 +93,9 @@ flowchart LR
 |---|---|---|
 | Devices | **LiDAR** (RPLidar C1 on an AtomS3) — one per stand, scans a 360° arc and classifies each slot by depth. **On-device YOLO** (AtomS3R-CAM-M12, ESP-DL YOLO11n) — two per stand, mounted top-left and top-right at 30° downward. Both count locally, every few seconds, and send only the integer. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
 | Sensor evaluation | `code/firmware/experiments/*` + `documentation/sensor-evaluation.md` | For each candidate sensor: wiring, firmware spike, bench + on-site accuracy, false-positive rate, cost, power, mounting constraints. The results pick what we deploy. |
-| Config | `code/backend/velo-stands-cosmos/stands.yaml` | The single source of truth for areas, stands and devices. CI validates it. The build copies it into the Function App, and copies a public subset (without hashes) into the front ends. |
+| Config | `code/backend/velo-stands-cosmos/stands.yaml` | The single source of truth for areas, stands and devices. `deploy-cosmos.ps1 -Sync` validates it and loads it into the `catalog` container; the Functions read it from there (cached 60 s) and serve a public subset without hashes at `GET /v1/config`. |
 | API | Azure Functions, Node 22, TypeScript | Authenticates devices, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. |
-| Database | Cosmos DB for NoSQL, serverless | Holds the latest state per area, plus raw readings with a TTL for history. |
+| Database | Cosmos DB for NoSQL, serverless | Four containers: `catalog` (site, areas, stands, devices, assignments), `state` (latest count per device and per stand, one document per area), `readings` (every accepted reading, 30-day TTL) and `rollups` (hourly per stand, for trends; the job that fills it isn't built yet). |
 | Push | Azure Web PubSub | Sends each area update to every connected client. |
 | App | Next.js static export, Serwist, Capacitor | The product: where to park right now. One build runs as an installable PWA at `app.<domain>`, and Capacitor wraps the same build for iOS and Android. |
 | Landing page | Next.js static export | Promotes the project: the problem, how it works, privacy by design and the team. It shows one live counter and links to the PWA and the store builds. It is served at the root domain and is the page behind the pitch QR code. |
@@ -132,9 +148,9 @@ flowchart LR
 
 ## What happens when a bike is parked
 
-1. Stand `fsw-1` at Flow South West has 20 slots and two cameras (on-device YOLO), one top-left (`cam-l`) and one top-right (`cam-r`), each looking down at ≈30° into the stand. `cam-l` sees 9 bikes on its side of the row and `cam-r` sees 8 on the other. Both send `POST /v1/readings`. Neither ever sends an image.
-2. The Function hashes the API key and finds the device in the bundled config, which gives it the stand. The device never says who it is in the request body.
-3. The Function appends the reading to `readings` with its source and stores the device's latest count in `state`. The stand then has 20 − (9 + 8) = 3 free slots. The area total is the sum of its stands.
+1. Stand `flow-sw-1` at Flow South West has 20 slots and two cameras (on-device YOLO), `mule` and `hydra`, one top-left and one top-right, each looking down at ≈30° into the stand. `mule` sees 9 bikes on its side of the row and `hydra` sees 8 on the other. Both send `POST /v1/readings`. Neither ever sends an image.
+2. The Function hashes the API key and finds the device in the `catalog` container; its open assignment gives it the stand. The device never says who it is in the request body.
+3. The Function stores the device's latest count and the stand's totals in the area's `state` document, then appends the reading to `readings`. The stand then has 20 − (9 + 8) = 3 free slots. The area total is the sum of its stands.
 4. A timer Function broadcasts the status of every stand through Web PubSub every 10 s, so every open client shows the new count within about 10 s.
 
 A client calls `/negotiate` and opens the WebSocket. Web PubSub tells the Function about the new connection (`connected` event), and the Function sends that client the current snapshot right away. Every broadcast is a full snapshot, so a client that reconnects never misses anything.
@@ -144,7 +160,7 @@ A client calls `/negotiate` and opens the WebSocket. Web PubSub tells the Functi
 Areas are the six real bike parking areas on the campus. A stand belongs to an area and has slots, and each device belongs to a stand. An area's free and total places are the sums over its stands.
 
 ```yaml
-# code/backend/velo-stands-cosmos/stands.yaml
+# code/backend/velo-stands-cosmos/stands.yaml (excerpt)
 version: 1
 site:
   id: reinach
@@ -155,47 +171,62 @@ areas:
   - id: flow-sw
     name: Flow South West
     kind: covered            # covered | inside | open
-  # … flow-main, sternenhof, flow-garage-south, flow-se, flow-garage-north
+  - id: flow-se
+    name: Flow South East
+    kind: covered
+  # … flow-main, sternenhof, flow-garage-south (inside), flow-garage-north
 
 stands:
-  - id: fsw-1
+  - id: flow-sw-1
     area: flow-sw
+    name: Flow South West, Stand 1
     slots: 20
-  - id: fsw-2
-    area: flow-sw
-    slots: 20
+    # location: { lat: 0.0, lon: 0.0 }   # TODO: GPS position of the stand
+  - id: flow-se-1
+    area: flow-se
+    name: Flow South East, Stand 1
+    slots: 10
 
 devices:
-  # Solution A — LiDAR. One head per stand.
-  - id: lidar-01
-    stand: fsw-1
+  # Solution A — LiDAR. One head sweeps the row.
+  - id: thor
+    name: Flow South East – LiDAR, far row
+    stand: flow-se-1
     hardware: lidar            # RPLidar C1 on an AtomS3
     mode: device
-    keyHash: "sha256:51b0…07cd"
+    status: active             # active | maintenance | retired
+    keyHash: "sha256:2402…b845"
     config:                    # device-specific knobs, fetched at boot
-      slots: 20                #   how many slot bays the LiDAR arc is split into
-      freeMm: 850              #   < freeMm → bike, ≥ freeMm → free (both inside bikeRange)
-      reportIntervalMs: 10000  #   how often to POST a reading
+      slots: 10                #   how many slot bays the LiDAR arc is split into
+      freeMm: 600              #   < freeMm → bike, ≥ freeMm → free (both inside bikeRange)
+      bikeRangeMinMm: 100
+      bikeRangeMaxMm: 1000
+      emaAlpha: 0.3
+      stableLatch: 3
+      calibrationMs: 8000
+      reportIntervalMs: 5000   #   how often to POST a reading
 
-  # Solution B — on-device YOLO. Two cameras per stand: top-left and
-  # top-right, both at ~30° downward into the stand.
-  - id: fsw2-cam-l
-    stand: fsw-2
+  # Solution B — on-device YOLO. Two cameras: top-left and top-right,
+  # both at ~30° downward into the stand.
+  - id: mule
+    stand: flow-sw-1
     hardware: yolo             # AtomS3R-CAM-M12, ESP-DL YOLO11n on-device
     mode: device
-    keyHash: "sha256:9f2c…e41a"
-  - id: fsw2-cam-r
-    stand: fsw-2
+    status: active
+    keyHash: "sha256:1a13…a357"
+  - id: hydra
+    stand: flow-sw-1
     hardware: yolo
     mode: device
-    keyHash: "sha256:a4e1…22bd"
+    status: active
+    keyHash: "sha256:b8d7…efd0"
 
 settings:
   staleAfterSeconds: 300
   readingTtlDays: 30
 ```
 
-To add a device, run `pnpm device:add tof-02 --stand fsw-1 --mode device --hardware vl53l5cx-array` and open a pull request. The command prints the key once, for flashing, and writes only the hash into the file. Point the devices on one stand at different bikes; the backend just adds up their counts.
+To add a device, create a secret with `node code/backend/velo-stands-functions/scripts/new-device-key.js` (it prints the secret once, for flashing, and its `keyHash`), add the device with that hash to `stands.yaml`, open a pull request, and load it with `./deploy-cosmos.ps1 -Sync`. Point the devices on one stand at different bikes; the backend just adds up their counts.
 
 ### Per-device config
 
@@ -214,13 +245,15 @@ X-Api-Key: vs_3q9Z…
 
 ```json
 200 {
-  "device": "lidar-01",
-  "stand": "fsw-1",
-  "slots": 20,                 // the stand's capacity
-  "config": {                  // device-specific knobs, verbatim from YAML
-    "slots": 8,                //   how many slot bays the LiDAR covers
-    "freeMm": 850,             //   < freeMm → bike, ≥ freeMm → free (both inside bikeRange)
-    "reportIntervalMs": 10000  //   single source of truth for how often to POST
+  "device": "thor",
+  "stand": "flow-se-1",
+  "slots": 10,                 // the stand's capacity
+  "config": {                  // device-specific knobs, verbatim from YAML ({} if none)
+    "slots": 10,               //   how many slot bays the LiDAR covers
+    "freeMm": 600,             //   < freeMm → bike, ≥ freeMm → free (both inside bikeRange)
+    "bikeRangeMinMm": 100, "bikeRangeMaxMm": 1000,
+    "emaAlpha": 0.3, "stableLatch": 3, "calibrationMs": 8000,
+    "reportIntervalMs": 5000   //   single source of truth for how often to POST
   }
 }
 ```
@@ -232,11 +265,11 @@ POST /api/v1/readings
 X-Api-Key: vs_3q9Z…
 Content-Type: application/json
 
-{ "occupied": 9, "seq": 1842, "measuredAt": "2026-10-31T07:42:10Z", "fw": "0.3.1", "rssi": -61 }
+{ "occupied": 7, "seq": 1842, "measuredAt": "2026-10-31T07:42:10Z", "fw": "0.3.1", "rssi": -61 }
 ```
 
 ```json
-202 { "device": "cam-01", "nextInSeconds": 60 }
+202 { "device": "thor", "stand": "flow-se-1", "occupied": 7, "standOccupied": 7, "slots": 10, "free": 3, "nextInSeconds": 60 }
 ```
 
 ### Errors
@@ -246,7 +279,7 @@ Content-Type: application/json
 | 401 | The key is unknown or missing. |
 | 409 | The device is not assigned to a stand. |
 | 422 | The JSON body is invalid: a negative count, a count above the stand's slots, or an unknown field. |
-| 429 | One device sent more than one request in 5 s. |
+| 429 | One device sent more than one request in 2 s (`Retry-After: 2`). |
 
 - The JSON schema has no field that could carry an image, and unknown fields are rejected. Only counts reach the backend.
 - `seq` lets the server drop duplicates and out-of-order retries. Each device sends at least every 60 s, which also serves as its heartbeat.
@@ -258,12 +291,12 @@ The client endpoints need no authentication. They are all read-only and return c
 
 | Endpoint | Returns |
 |---|---|
-| `GET /api/v1/state` | `Snapshot` |
+| `GET /api/v1/state` | `Snapshot` (planned, not built yet) |
 | `GET /api/v1/config` | The public config, without key hashes |
 | `GET /api/v1/stands` | Every active stand: name, area, current and max occupancy, free, stale, updatedAt |
 | `POST /api/v1/negotiate` | `{ url }`, a Web PubSub URL (valid 60 min) that can only receive |
 | `POST /api/v1/pubsub/events` | Called by Web PubSub, not by clients: on `connected` the Function sends the new connection the current snapshot |
-| `GET /api/v1/history?stand=…&from=…&to=…` | The stand's readings, oldest first |
+| `GET /api/v1/history?stand=…&from=…&to=…` | The stand's readings, oldest first (planned, not built yet) |
 | `GET /api/v1/debug/devices` | Per-device summary for the debug app: public info plus `lastSeenAt`, `stale` and `lastImage` |
 | `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | Recent log lines of one device, from an in-memory ring buffer the ingest handler writes to |
 | `GET /api/v1/debug/devices/{deviceId}/image` | The latest JPEG the device uploaded for debug viewing, or 404 if none yet |
@@ -276,7 +309,7 @@ GET /api/v1/state
   "areas": [
     { "id": "flow-sw", "name": "Flow South West", "kind": "covered",
       "capacity": 20, "free": 3, "stale": false,
-      "stands": [ { "id": "fsw-1", "slots": 20, "occupied": 17, "free": 3, "stale": false } ] }
+      "stands": [ { "id": "flow-sw-1", "slots": 20, "occupied": 17, "free": 3, "stale": false } ] }
   ]
 }
 ```
@@ -289,7 +322,7 @@ ws.onmessage = (e) => apply(JSON.parse(e.data));
 
 // each message: the body of GET /api/v1/stands plus `type`
 { "type": "stands", "at": "…", "stands": [
-  { "id": "kaegen-hof-1", "name": "Kägenstrasse 2 – Hof, Stand 1", "areaId": "kaegen-hof", "areaName": "Kägenstrasse 2 – Hof",
+  { "id": "flow-main-1", "name": "Flow Main, Stand 1", "areaId": "flow-main", "areaName": "Flow Main",
     "currentOccupancy": 8, "maxOccupancy": 40, "free": 32, "stale": false, "updatedAt": "…" } ] }
 ```
 
@@ -300,7 +333,7 @@ ws.onmessage = (e) => apply(JSON.parse(e.data));
 ## Data model
 
 The data model has three layers:
-- **Config** describes what exists. It comes from `stands.yaml` and changes only by pull request.
+- **Config** describes what exists. It comes from `stands.yaml`, changes only by pull request, and is loaded into the Cosmos `catalog` container by the sync.
 - **Stored** is what the devices told us, kept in Cosmos DB.
 - **Views** are computed from the two on every read and never stored, so no derived number can drift.
 
@@ -326,13 +359,16 @@ erDiagram
   STAND {
     string id
     string area
+    string name
     int slots
   }
   DEVICE {
     string id
+    string name
     string stand
     string hardware
     string mode
+    string status
     string keyHash
   }
   READING {
@@ -369,10 +405,13 @@ interface Area   { id: string; name: string; kind: AreaKind }
 interface Stand  { id: string; area: Area["id"]; name?: string; slots: number } // slots >= 1
 interface Device {
   id: string;
-  stand: Stand["id"];
-  hardware: string;            // "esp32-cam", "rplidar-c1", … free text
+  name?: string;
+  stand: Stand["id"];          // short form of an open assignment
+  hardware: string;            // "lidar" or "yolo" in the catalog today
   mode: DeviceMode;
+  status?: "active" | "maintenance" | "retired";
   keyHash: `sha256:${string}`; // never shipped to the front ends
+  config?: Record<string, unknown>; // opaque knobs, served by /v1/device/config
 }
 interface Settings    { staleAfterSeconds: number; readingTtlDays: number }
 
@@ -385,6 +424,8 @@ interface Config {
 CI also checks what the types can't: ids are unique per kind, every `area` and `stand` reference resolves, every area has at least one stand, every stand has at least one device, and key hashes are unique.
 
 ### Stored (Cosmos DB)
+
+The `catalog` container (partition key `/siteId`, no TTL) holds one document per site, area, stand, device and device assignment, written by the sync from `stands.yaml`. Today that is 1 site, 6 areas, 6 stands, 10 devices and 10 open assignments. The `rollups` container (`/standId`, no TTL) is created but stays empty until the hourly job exists. See `code/backend/velo-stands-cosmos/README.md` for their document shapes.
 
 ```ts
 // container "readings", partition key /standId, default TTL 30 days
@@ -400,6 +441,9 @@ interface Reading {
   receivedAt: string;
   fw?: string;
   rssi?: number;
+  slots: number;           // the stand's slots, total and free at that moment,
+  standOccupied: number;   //   so the hourly rollup can use them directly
+  standFree: number;
 }
 
 // container "state", partition key /areaId, one document per area, no TTL
@@ -407,6 +451,7 @@ interface AreaState {
   id: string;              // = areaId
   areaId: string;
   devices: Record<string, DeviceState>; // keyed by deviceId
+  stands: Record<string, StandState>;   // keyed by standId
   updatedAt: string;
 }
 interface DeviceState {
@@ -415,10 +460,20 @@ interface DeviceState {
   source: "device";
   seq: number;
   at: string;              // receivedAt of the reading that set it
+  measuredAt?: string;
+}
+interface StandState {
+  slots: number;
+  occupied: number;
+  free: number;
+  devices: string[];       // device ids with an open assignment
+  missingDevices: string[];// never reported
+  staleDevices: string[];  // quiet for more than staleAfterSeconds
+  at: string;
 }
 ```
 
-Ingest writes one device's entry with a Cosmos **patch** (`set /devices/cam-01`), guarded by `seq`. That way two devices in the same area never overwrite each other, and no read-modify-write is needed. Nothing else is stored: no images, no people and no identity for individual bikes.
+The sync creates an empty `state` document for each of the six areas. Ingest updates a device's entry and its stand's totals by replacing the area document with an ETag check (`IfMatch`), re-reading and retrying up to 5 times when another device in the same area wrote first, so no count is lost. Nothing else is stored: no images, no people and no identity for individual bikes.
 
 ### Views (computed on read)
 
@@ -426,9 +481,8 @@ Ingest writes one device's entry with a Cosmos **patch** (`set /devices/cam-01`)
 interface StandView  { id: string; slots: number; occupied: number; free: number; stale: boolean }
 interface AreaView   { id: string; name: string; kind: AreaKind;
                        capacity: number; free: number; stale: boolean; stands: StandView[] }
-interface Snapshot   { at: string; areas: AreaView[] }                 // GET /v1/state
-interface AreaUpdate { type: "area"; id: string; capacity: number;
-                       free: number; stale: boolean; at: string }       // WebSocket message
+interface Snapshot   { at: string; areas: AreaView[] }                 // GET /v1/state (planned)
+// The WebSocket message is the body of GET /v1/stands plus type: "stands", see above.
 ```
 
 | Value | Rule |
@@ -441,5 +495,5 @@ interface AreaUpdate { type: "area"; id: string; capacity: number;
 
 These rules live in one pure function, `computeViews(config, states, now)`, in `packages/contracts`. It is tested with Vitest and used by both `/state` and the broadcast.
 
-**Volume.** Ten devices reporting once a minute make about 14,000 readings a day, which costs a few cents in serverless request units.
+**Volume.** Ten devices reporting once a minute make about 14,000 readings a day. `thor` is configured to report every 5 s (17,280 a day on its own), so the catalog as it stands produces about 30,000 readings a day, roughly 0.6 million request units at ~20 RU per reading.
 

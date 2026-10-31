@@ -8,8 +8,9 @@ we pick what we pick.
 
 ## The two solutions we deploy
 
-Every stand uses one of these two. Both run entirely on-device; only the
-integer count leaves the stand.
+Both run entirely on-device; only the integer count leaves the stand. Most
+stands use one of the two; three stands currently combine them (see the table
+below).
 
 1. **LiDAR (preferred).** A 360° RPLidar C1 head on an AtomS3, mounted on the
    ceiling or a beam, splits the arc into one angular bay per slot and
@@ -26,6 +27,30 @@ integer count leaves the stand.
    cross-check and together cover the full line of bays. Firmware:
    [`code/firmware/mule`](../code/firmware/mule) and
    [`code/firmware/hydra`](../code/firmware/hydra).
+
+## What is deployed per stand
+
+From the catalog in Cosmos DB (`code/backend/velo-stands-cosmos/stands.yaml`):
+
+| Area | Kind | Stand | Slots | Devices |
+| ---- | ---- | ----- | ----: | ------- |
+| Flow Main | covered | `flow-main-1` | 40 | `ghost` LiDAR · `raven` YOLO camera |
+| Sternenhof | covered | `sternenhof-1` | 30 | `medic` LiDAR · `reaper` YOLO camera |
+| Flow Garage South | inside | `flow-garage-south-1` | 30 | `roach` LiDAR · `probe` YOLO camera |
+| Flow South West | covered | `flow-sw-1` | 20 | `mule` + `hydra`, two YOLO cameras |
+| Flow South East | covered | `flow-se-1` | 10 | `thor` LiDAR |
+| Flow Garage North | covered | `flow-garage-north-1` | 20 | `ling` LiDAR |
+| **6 areas** | | **6 stands** | **150** | **10 devices: 5 LiDAR, 5 YOLO cameras** |
+
+- Flow Main, Sternenhof and Flow Garage South each pair one LiDAR with one
+  camera. The backend adds the two counts, so the two devices must watch
+  different bikes, or the stand is counted twice.
+- Flow South West is the reference two-camera setup (`mule` + `hydra`).
+- Flow South East and Flow Garage North use the preferred single LiDAR.
+  `thor` on Flow South East is the only device with a `config:` block:
+  10 slot bays, `freeMm` 600, range 100–1000 mm, report every 5 s.
+- Slot counts are placeholders until Endress+Hauser confirms the real
+  capacities.
 
 The rest of this document is the record of candidates we evaluated before
 settling on these two, so the choice stays defensible.
