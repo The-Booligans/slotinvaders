@@ -1,3 +1,5 @@
+"use client";
+
 import {
   averageDaysPerWeek,
   co2SavedKg,
@@ -5,7 +7,8 @@ import {
   leaderboardRank,
   topPercent,
 } from "@/lib/profile-demo";
-import { ShieldIcon, UserIcon } from "./icons";
+import { useBikeLocation } from "../use-bike-location";
+import { BikeIcon, ShieldIcon, UserIcon } from "./icons";
 
 const CARD = "rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5";
 const BRAND = "#2B7EB5";
@@ -15,12 +18,62 @@ export function ProfileView() {
     <div className="h-full overflow-y-auto bg-slate-50 px-4 py-6">
       <div className="mx-auto flex max-w-md flex-col gap-4">
         <GuestCard />
+        <ParkedCard />
         <PrivacyCard />
         <PreviewDivider />
         <DemoProfile />
         <OptInCard />
       </div>
     </div>
+  );
+}
+
+function formatWhen(at: number): string {
+  const diffMs = Date.now() - at;
+  const minutes = Math.round(diffMs / 60_000);
+  if (minutes < 1) return "just now";
+  if (minutes < 60) return `${minutes} min ago`;
+  const hours = Math.round(minutes / 60);
+  if (hours < 24) return `${hours} h ago`;
+  const days = Math.round(hours / 24);
+  return `${days} d ago`;
+}
+
+function ParkedCard() {
+  const { parked, scanning, error } = useBikeLocation();
+  return (
+    <section className={CARD}>
+      <div className="flex items-start gap-3">
+        <div className="grid size-10 place-items-center rounded-full bg-emerald-50 text-emerald-600">
+          <BikeIcon className="size-6" />
+        </div>
+        <div className="flex-1">
+          <h2 className="font-semibold text-slate-900">Where I parked</h2>
+          {parked ? (
+            <>
+              <p className="mt-1 text-sm text-slate-700">
+                Your bike is at <span className="font-semibold">{parked.areaName}</span>.
+              </p>
+              <p className="mt-0.5 text-xs text-slate-500">
+                {parked.standName} · remembered {formatWhen(parked.at)}
+              </p>
+            </>
+          ) : error ? (
+            <p className="mt-1 text-sm text-slate-500">
+              Bluetooth isn&rsquo;t available — the app can&rsquo;t spot a stand right now.
+            </p>
+          ) : scanning ? (
+            <p className="mt-1 text-sm text-slate-500">
+              Watching for stand beacons. Park near one and we&rsquo;ll remember it when you leave campus.
+            </p>
+          ) : (
+            <p className="mt-1 text-sm text-slate-500">
+              Open the app on your phone and we&rsquo;ll remember where you park.
+            </p>
+          )}
+        </div>
+      </div>
+    </section>
   );
 }
 

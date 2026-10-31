@@ -38,7 +38,9 @@
 Slot Invaders turns the six bike parking areas on the Endress+Hauser Reinach
 campus into live counters: six stands with 150 slots, watched by ten sensors.
 Each sensor reports how many bikes it sees; the app shows you where to park
-before you arrive.
+before you arrive. On iOS and Android it also remembers **where you left your
+bike**: an iBeacon on each stand lets the app pin down the right rack
+on-device, so you never lose track of it.
 
 ## Live environments
 
@@ -85,6 +87,23 @@ and no stand has a GPS position yet.
 
 Details and numbers in
 [`documentation/sensor-evaluation.md`](documentation/sensor-evaluation.md).
+
+## Remember where you parked
+
+iOS and Android only. Every stand has a small BLE iBeacon with a known MAC in
+`stands.yaml` (`stands[].beacon`). The app scans continuously, times how long
+each beacon is in range during the current campus visit, and — once no beacon
+has been seen for five minutes — stores the stand you dwelled at longest.
+Everything happens on the device; only the matched stand name is kept, locally,
+and nothing is uploaded. The rollout starts with two beacons:
+
+| Stand                    | iBeacon MAC    |
+| ------------------------ | -------------- |
+| Flow South East (`flow-se-1`) | `80ECCCD2BB45` |
+| Flow South West (`flow-sw-1`) | `80ECCCD2B73A` |
+
+Open the app's **Profile** tab after you've locked up — the card at the top
+tells you which rack your bike is on.
 
 ## The idea in one picture
 

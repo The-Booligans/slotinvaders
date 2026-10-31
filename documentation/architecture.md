@@ -145,7 +145,8 @@ flowchart LR
 - The user's position comes from the device GPS (`navigator.geolocation.watchPosition`, `code/app/lib/user-location.ts`). Lat/lon is turned into campus metres with a flat-earth projection anchored on one known GPS fix (the flow-se rack, 47.48685 N 7.59995 E). Cards show walking distance from that position and sort nearest first; the "you are here" dot only appears when the user is inside the map bounds.
 - Without a position — permission denied, a laptop with no location, or no fix yet — the dot is hidden, cards show no distance and sort by name, and a hint ("Location blocked" / "Location unavailable") sits top-left on the map. A lost signal after a fix keeps the last position. On Android the WebView asks for `ACCESS_FINE_LOCATION`/`ACCESS_COARSE_LOCATION`, declared in the manifest; on iOS the equivalent is `NSLocationWhenInUseUsageDescription` in `code/app/ios/App/App/Info.plist` (not yet added — the geolocation prompt will not appear until it is); browsers only allow geolocation over HTTPS or localhost.
 - The Android and iOS apps bundle the static export (`out/`) into the native binary. After any web change, run `pnpm build` and `pnpm exec cap sync` (or `cap sync android` / `cap sync ios`) before building, or the phone keeps running the old web code. The iOS project lives in `code/app/ios/` and opens with `pnpm exec cap open ios` (requires Xcode and CocoaPods on macOS).
-- Profile shows the **Guest** card (default avatar, nobody logs in) with a mock streak, followed by a "Preview · coming soon" gamification mock: rides since joining, average bike days per week, leaderboard rank, CO₂ saved, a weekly chart, a leaderboard of the team (The Booligans), badges and an opt-in/delete-anytime notice. All of it is static sample data from `code/app/lib/profile-demo.ts`; nothing is tracked or stored, and the "Start tracking" button is disabled.
+- **Remember where I parked** (iOS and Android only). Every stand has an iBeacon with a known MAC in `stands[].beacon` (see [Config file](#config-file)). The native app scans continuously with `@capacitor-community/bluetooth-le`; the pure logic in `code/app/lib/bike-location.ts` tracks dwell per stand for the current campus visit. When no configured beacon has been seen for 5 min we treat the trip as ended and store the stand with the longest dwell as the parked location (`localStorage`, `code/app/lib/bike-location-storage.ts`). While a trip is in progress we keep accumulating but do not rewrite the stored stand, so a brief detour on the way out never overwrites where the bike actually is. The stored record is shown in Profile → **Where I parked**. Only the beacon MAC and timestamp live on the phone — nothing is sent to the backend. Android needs `BLUETOOTH_SCAN` (with `neverForLocation`) and `BLUETOOTH_CONNECT`; iOS needs `NSBluetoothAlwaysUsageDescription`. The rollout starts with two beacons: `80ECCCD2BB45` at `flow-se-1` and `80ECCCD2B73A` at `flow-sw-1`.
+- Profile shows the **Guest** card (default avatar, nobody logs in) with a mock streak and the **Where I parked** card, followed by a "Preview · coming soon" gamification mock: rides since joining, average bike days per week, leaderboard rank, CO₂ saved, a weekly chart, a leaderboard of the team (The Booligans), badges and an opt-in/delete-anytime notice. All of the gamification is static sample data from `code/app/lib/profile-demo.ts`; nothing is tracked or stored, and the "Start tracking" button is disabled.
 
 ## What happens when a bike is parked
 
@@ -182,6 +183,9 @@ stands:
     area: flow-sw
     name: Flow South West, Stand 1
     slots: 20
+    # Optional iBeacon MAC. If set, the mobile app can remember that a bike
+    # was parked here (see "Remember where I parked" in the App screen).
+    beacon: "80ECCCD2B73A"
     # location: { lat: 0.0, lon: 0.0 }   # TODO: GPS position of the stand
   - id: flow-se-1
     area: flow-se
@@ -403,7 +407,7 @@ type DeviceMode = "device"; // devices count locally and POST the integer
 
 interface Site   { id: string; name: string; timezone: string }
 interface Area   { id: string; name: string; kind: AreaKind }
-interface Stand  { id: string; area: Area["id"]; name?: string; slots: number } // slots >= 1
+interface Stand  { id: string; area: Area["id"]; name?: string; slots: number; beacon?: string } // slots >= 1, beacon is a 12-char MAC
 interface Device {
   id: string;
   name?: string;

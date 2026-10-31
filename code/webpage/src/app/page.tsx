@@ -173,12 +173,16 @@ export default function Page() {
                   <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
                     <rect x="7" y="2.5" width="10" height="19" rx="2.4" />
                     <path d="M11 18.5h2" />
+                    <circle cx="12" cy="7.5" r="1.4" />
+                    <path d="M9.4 7.5a3.6 3.6 0 0 1 5.2 0" />
+                    <path d="M7.6 7.5a6 6 0 0 1 8.8 0" />
                   </svg>
                 </div>
                 <h3>Remembers your bike</h3>
                 <p>
-                  Install the app. It remembers where you parked and reminds you when you need it.
-                  Still no account required.
+                  Install the app on iOS or Android. A small iBeacon on every stand pings your
+                  phone, and when you leave campus the app pins down exactly which rack your bike
+                  is on — all on-device, no account, nothing uploaded.
                 </p>
               </div>
 

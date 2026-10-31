@@ -62,11 +62,21 @@ export function toCatalog(cfg) {
     if (!AREA_KINDS.includes(a.kind)) errors.push(`area "${a.id}": kind must be ${AREA_KINDS.join(" | ")}`);
   }
 
+  const beacons = new Set();
   for (const s of stands) {
     if (!areaById.has(s.area)) errors.push(`stand "${s.id}": unknown area "${s.area}"`);
     if (!Number.isInteger(s.slots) || s.slots < 1) errors.push(`stand "${s.id}": slots must be a whole number of at least 1`);
     if (s.location !== undefined && !isLatLon(s.location)) {
       errors.push(`stand "${s.id}": location must be { lat: <-90..90>, lon: <-180..180> }`);
+    }
+    if (s.beacon !== undefined) {
+      if (typeof s.beacon !== "string" || !/^[0-9A-F]{12}$/.test(s.beacon)) {
+        errors.push(`stand "${s.id}": beacon must be a 12-char uppercase hex MAC, e.g. "80ECCCD2BB45"`);
+      } else if (beacons.has(s.beacon)) {
+        errors.push(`stand "${s.id}": beacon "${s.beacon}" is already used by another stand`);
+      } else {
+        beacons.add(s.beacon);
+      }
     }
     if (s.retiredAt !== undefined && !toIso(s.retiredAt)) errors.push(`stand "${s.id}": retiredAt is not a date`);
   }
@@ -161,6 +171,7 @@ export function toCatalog(cfg) {
       standId: s.id, areaId: s.area, name: s.name ?? s.id, slots: s.slots,
       location: s.location ? { type: "Point", coordinates: [s.location.lon, s.location.lat] } : null, // GeoJSON: [lon, lat]
       locationNote: s.locationNote ?? null,
+      beacon: s.beacon ?? null,            // iBeacon MAC, used by the mobile app's "remember my bike" feature
       retiredAt: s.retiredAt ? toIso(s.retiredAt) : null,
     })),
     ...devices.map((d) => ({

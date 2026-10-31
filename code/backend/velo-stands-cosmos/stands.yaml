@@ -7,6 +7,7 @@
 #   stands[].name          readable name, shown in the app
 #   stands[].location      GPS position { lat, lon } for "nearest free stand"
 #   stands[].locationNote  where to find the stand, in words
+#   stands[].beacon        iBeacon BLE MAC, lets the app remember where a bike was parked
 #   devices[].name         readable name, used in logs and the admin view
 #   devices[].status       active | maintenance | retired
 #
@@ -76,11 +77,13 @@ stands:
     name: Flow South West, Stand 1
     slots: 20
     # location: { lat: 0.0, lon: 0.0 }   # TODO
+    beacon: "80ECCCD2B73A"               # iBeacon MAC — the app uses it to remember where a bike was parked
   - id: flow-se-1
     area: flow-se
     name: Flow South East, Stand 1
     slots: 10
     # location: { lat: 0.0, lon: 0.0 }   # TODO
+    beacon: "80ECCCD2BB45"               # iBeacon MAC — the app uses it to remember where a bike was parked
   - id: flow-garage-north-1
     area: flow-garage-north
     name: Flow Garage North, Stand 1
