@@ -116,6 +116,15 @@ flowchart LR
 | [Static Web Apps](https://learn.microsoft.com/azure/static-web-apps/) | Hosting for both front ends. |
 | [Terraform](https://www.terraform.io/) | Infrastructure as code (with the `azurerm` provider). |
 
+## App screen
+
+`code/app` is a single screen with a header (brand, total free slots, data status), the 3D campus map, and a bottom bar with **Map** and **Profile** tabs.
+
+- The map shows one pin per stand, coloured by occupancy (green < 60 %, amber < 85 %, orange < 100 %, red full) and labelled with free slots, plus a "you are here" dot.
+- A swipeable **Nearby racks** carousel overlays the bottom of the map, sorted by distance. Swiping a card selects its pin and the camera glides to it; tapping a pin scrolls to its card. A button recenters the whole campus.
+- Stand positions come from `campus.json` in `@slotinvaders/campus-map`. Occupancy and the user's position are **mocks** (`code/app/lib/parking.ts`) until `GET /v1/state` and device location are wired in.
+- Profile is a placeholder: nobody logs in.
+
 ## What happens when a bike is parked
 
 1. Stand `fsw-1` at Flow South West has 20 slots and two devices. `tof-01` is a ToF array that counts occupied bays locally and sees 9 bikes; `lidar-01` is a LiDAR scanner that sees 8. Both send `POST /v1/readings`. Neither ever sends an image.

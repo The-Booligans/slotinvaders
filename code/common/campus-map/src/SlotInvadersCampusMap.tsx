@@ -4,6 +4,7 @@ import { Canvas } from '@react-three/fiber';
 import { useEffect, useRef, useState, type CSSProperties } from 'react';
 import { Scene } from './Scene';
 import type { CameraInfo } from './CameraReporter';
+import { MarkerOverlay, type CampusMarker, type MarkerNodes } from './Markers';
 
 export interface SlotInvadersCampusMapProps {
   /** URL to the campus.glb — defaults to a sibling at the site root. */
@@ -13,6 +14,13 @@ export interface SlotInvadersCampusMapProps {
   /** Show a HUD with the live camera numbers — orbit the map, then paste the
    *  `dir` / `target` values into `style.ts` to lock in the view. */
   debug?: boolean;
+  /** Pins floating over campus positions (x east, y north, metres). */
+  markers?: CampusMarker[];
+  /** The highlighted marker; the camera glides to it whenever it changes. */
+  selectedMarkerId?: string | null;
+  onMarkerSelect?: (id: string) => void;
+  /** Change this value to glide the camera back to the initial view. */
+  recenterKey?: number;
   /** Inline style for the outer wrapper; pass height to size the canvas. */
   style?: CSSProperties;
   className?: string;
@@ -27,11 +35,16 @@ export function SlotInvadersCampusMap({
   glbUrl = '/campus.glb',
   offset,
   debug = false,
+  markers,
+  selectedMarkerId,
+  onMarkerSelect,
+  recenterKey,
   style,
   className,
 }: SlotInvadersCampusMapProps) {
   const infoRef = useRef<CameraInfo | null>(null);
   const [info, setInfo] = useState<CameraInfo | null>(null);
+  const [markerNodes] = useState<MarkerNodes>(() => new Map());
 
   useEffect(() => {
     if (!debug) return;
@@ -52,8 +65,24 @@ export function SlotInvadersCampusMap({
         camera={{ fov: 36, near: 1, far: 4000 }}
         gl={{ antialias: true }}
       >
-        <Scene glbUrl={glbUrl} offset={offset} debugRef={debug ? infoRef : undefined} />
+        <Scene
+          glbUrl={glbUrl}
+          offset={offset}
+          debugRef={debug ? infoRef : undefined}
+          markers={markers}
+          markerNodes={markerNodes}
+          selectedMarkerId={selectedMarkerId}
+          recenterKey={recenterKey}
+        />
       </Canvas>
+      {markers && (
+        <MarkerOverlay
+          markers={markers}
+          nodes={markerNodes}
+          selectedId={selectedMarkerId}
+          onSelect={onMarkerSelect}
+        />
+      )}
       {debug && info && <CameraHud info={info} />}
     </div>
   );

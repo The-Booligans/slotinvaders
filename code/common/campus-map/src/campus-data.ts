@@ -22,7 +22,19 @@ export interface AreaPatch {
   kind: 'parking' | 'wood' | 'green';
 }
 
+export interface CampusStand {
+  id: string;
+  kind: 'covered' | 'garage' | 'open';
+  label: string;
+  capacity: number;
+  /** metres, +x east */
+  x: number;
+  /** metres, +y north */
+  y: number;
+}
+
 interface CampusData {
+  stands: CampusStand[];
   bounds: { minx: number; maxx: number; miny: number; maxy: number };
   zones: Zone[];
   roads: Road[];
@@ -35,6 +47,7 @@ export const BOUNDS = data.bounds;
 export const ZONES = data.zones;
 export const ROADS = data.roads;
 export const AREAS: AreaPatch[] = data.areas ?? [];
+export const STANDS: CampusStand[] = data.stands;
 
 export const CENTRE: [number, number] = [
   (BOUNDS.minx + BOUNDS.maxx) / 2,
