@@ -106,8 +106,8 @@ describe("Landing page", () => {
     render(<Page />);
     for (const name of [
       "Dobrawa Kiefer",
-      "Nila M.",
-      "Artur Semenko",
+      "Nila Mönig",
+      "Artur Semenenko",
       "Luca Rullo",
       "Samuel Rink",
       "Valentino Rusconi",

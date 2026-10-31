@@ -25,7 +25,7 @@ export const DEMO_PROFILE: DemoProfile = {
     { name: "Luca Rullo", rides: 176 },
     { name: "Samuel Rink", rides: 157 },
     { name: "You", rides: 142, isYou: true },
-    { name: "Nila M.", rides: 131 },
+    { name: "Nila Mönig", rides: 131 },
     { name: "David Übelacker", rides: 118 },
     { name: "Artur Semenenko", rides: 96 },
   ],

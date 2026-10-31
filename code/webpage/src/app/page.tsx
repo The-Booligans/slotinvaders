@@ -3,8 +3,8 @@ import { StandList } from "@/components/StandList";
 
 const team = [
   "Dobrawa Kiefer",
-  "Nila M.",
-  "Artur Semenko",
+  "Nila Mönig",
+  "Artur Semenenko",
   "Luca Rullo",
   "Samuel Rink",
   "Valentino Rusconi",
