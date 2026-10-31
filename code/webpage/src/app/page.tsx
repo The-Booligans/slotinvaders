@@ -1,4 +1,4 @@
-import { CampusMapPanel } from "@/components/CampusMapPanel";
+import { HeroCampusMap } from "@/components/HeroCampusMap";
 import { StandList } from "@/components/StandList";
 
 const team = [
@@ -96,7 +96,7 @@ export default function Page() {
       <main id="top">
         <section className="hero hero--map">
           <div className="hero-map" aria-hidden="true">
-            <CampusMapPanel heroDesktop />
+            <HeroCampusMap />
           </div>
           <a className="hero-eyebrow hero-eyebrow--top" href="#privacy">
             <svg

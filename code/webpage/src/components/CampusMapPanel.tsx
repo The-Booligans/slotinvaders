@@ -2,6 +2,7 @@
 
 import dynamic from "next/dynamic";
 import { useEffect, useState } from "react";
+import type { CampusMarker } from "@slotinvaders/campus-map";
 
 /**
  * next/dynamic with ssr: false keeps three.js off the server — @react-three/fiber
@@ -18,9 +19,11 @@ interface Props {
   heroDesktop?: boolean;
   /** Show the live camera-dir HUD so you can orbit the map and read the numbers off */
   debug?: boolean;
+  /** Pins floating over campus positions (x east, y north, metres). */
+  markers?: CampusMarker[];
 }
 
-export function CampusMapPanel({ heroDesktop = false, debug = false }: Props) {
+export function CampusMapPanel({ heroDesktop = false, debug = false, markers }: Props) {
   const [wide, setWide] = useState(false);
 
   useEffect(() => {
@@ -37,7 +40,7 @@ export function CampusMapPanel({ heroDesktop = false, debug = false }: Props) {
 
   return (
     <div className="campus-map">
-      <SlotInvadersCampusMap offset={offset} debug={debug} />
+      <SlotInvadersCampusMap offset={offset} debug={debug} markers={markers} />
     </div>
   );
 }
