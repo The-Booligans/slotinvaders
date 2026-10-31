@@ -117,7 +117,7 @@ svg {
   display: inline-flex;
   align-items: center;
   gap: clamp(6px, 1.6vw, 8px);
-  padding: 6px clamp(10px, 2.6vw, 14px) 6px clamp(9px, 2.4vw, 12px);
+  padding: 7px clamp(16px, 3.6vw, 20px) 7px clamp(12px, 2.8vw, 14px);
   margin-bottom: 20px;
   border-radius: 999px;
   background: color-mix(in oklch, var(--cyan) 10%, #ffffff);
@@ -311,6 +311,14 @@ p {
   gap: 24px;
   padding-block: 20px;
 }
+@media (max-width: 820px) {
+  .site-header .container {
+    padding-block: 14px;
+  }
+  .wm--sm {
+    font-size: 17px;
+  }
+}
 .site-nav {
   display: flex;
   gap: 28px;
@@ -326,6 +334,112 @@ p {
 }
 @media (max-width: 820px) {
   .site-nav {
+    display: none;
+  }
+}
+
+/* ---------- BURGER MENU (phone only) ---------- */
+.burger-btn {
+  display: none;
+  position: relative;
+  z-index: 60;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  background: transparent;
+  padding: 0;
+  cursor: pointer;
+  color: var(--fg);
+}
+@media (max-width: 820px) {
+  .burger-btn {
+    display: inline-flex;
+    align-items: center;
+    justify-content: center;
+  }
+}
+.burger-bars,
+.burger-invader {
+  position: absolute;
+  transition:
+    opacity 240ms ease,
+    transform 320ms cubic-bezier(0.3, 1.4, 0.6, 1);
+  will-change: transform, opacity;
+}
+.burger-bars {
+  width: 26px;
+  height: 26px;
+  fill: none;
+  stroke: currentColor;
+  stroke-width: 2;
+  stroke-linecap: round;
+  opacity: 1;
+  transform: scale(1) rotate(0);
+}
+.burger-invader {
+  /* 33:24 → match the symbol in page.tsx */
+  width: 30px;
+  height: 22px;
+  opacity: 0;
+  transform: translateY(-10px) scale(0.5) rotate(-18deg);
+}
+.burger-btn--open .burger-bars {
+  opacity: 0;
+  transform: scale(0.4) rotate(-90deg);
+}
+.burger-btn--open .burger-invader {
+  opacity: 1;
+  transform: translateY(0) scale(1) rotate(0);
+  animation: invader-hover 1.6s ease-in-out 320ms infinite;
+}
+@keyframes invader-hover {
+  0%,
+  100% {
+    transform: translateY(0) scale(1) rotate(0);
+  }
+  50% {
+    transform: translateY(-2px) scale(1) rotate(0);
+  }
+}
+
+.mobile-menu {
+  position: fixed;
+  inset: 0;
+  z-index: 40;
+  background: color-mix(in oklch, var(--bg) 92%, var(--cyan));
+  padding: calc(72px + 24px) 24px 24px;
+  opacity: 0;
+  pointer-events: none;
+  transform: translateY(-8px);
+  transition:
+    opacity 180ms ease,
+    transform 220ms ease;
+}
+.mobile-menu--open {
+  opacity: 1;
+  pointer-events: auto;
+  transform: translateY(0);
+}
+.mobile-menu__nav {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+  font-family: var(--font-display);
+}
+.mobile-menu__nav a {
+  padding: 14px 4px;
+  font-size: 24px;
+  font-weight: 600;
+  color: var(--fg);
+  border-bottom: 1px solid var(--hairline);
+  transition: color 0.15s ease;
+}
+.mobile-menu__nav a:hover,
+.mobile-menu__nav a:active {
+  color: var(--cyan);
+}
+@media (min-width: 821px) {
+  .mobile-menu {
     display: none;
   }
 }
@@ -353,8 +467,31 @@ p {
   touch-action: none;
 }
 @media (max-width: 820px) {
+  .hero--map {
+    --header-h: 72px;
+  }
   .hero-map {
     transform: translateY(-200px);
+  }
+  .hero-overlay {
+    padding-bottom: 24px;
+  }
+  .hero-copy--card {
+    padding: 20px 22px;
+    max-width: calc(100% - 24px);
+  }
+  .hero h1 {
+    font-size: clamp(28px, 7.5vw, 36px);
+  }
+  .hero .lead {
+    margin-top: 14px;
+    font-size: 15px;
+  }
+  .hero-stores {
+    margin-top: 20px;
+  }
+  .hero-learn {
+    margin-top: 16px;
   }
 }
 /* The <Canvas> from @react-three/fiber sets pointer-events via inline style,

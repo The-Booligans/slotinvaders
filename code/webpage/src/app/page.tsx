@@ -1,3 +1,4 @@
+import { BurgerNav } from "@/components/BurgerNav";
 import { HeroCampusMap } from "@/components/HeroCampusMap";
 
 const team = [
@@ -89,6 +90,7 @@ export default function Page() {
             <a href="#team">Team</a>
             <a href="https://github.com/The-Booligans/slotinvaders">GitHub</a>
           </nav>
+          <BurgerNav />
         </div>
       </header>
 
