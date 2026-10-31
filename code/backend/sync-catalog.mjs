@@ -2,15 +2,21 @@
 // Velo Stands – load stands, devices and device assignments into the "catalog"
 // container, and give every area its document in "state".
 //
-//   node sync-catalog.mjs [stands.yaml] [--dry-run]
+//   node sync-catalog.mjs [stands.yaml] [--dry-run] [--prune]
+//
+//   --dry-run  only check the file and print the documents
+//   --prune    also delete catalog documents of this site that are no longer in
+//              the file, and state documents of areas that are no longer in it.
+//              Use it to clear out test or sample data, not to retire devices.
 //
 //   COSMOS_ENDPOINT   https://<account>.documents.azure.com:443/ (not needed for --dry-run)
 //   COSMOS_DATABASE   default: velostands
 //   COSMOS_KEY        optional. Without it, your Azure CLI login or managed identity is used.
 //
 // The file is checked first, and nothing is written if it has errors.
-// The sync only adds and updates. To take a stand or device out of service,
-// retire it in the file instead of deleting it, because the history points at it.
+// Without --prune the sync only adds and updates. To take a stand or device out
+// of service, retire it in the file instead of deleting it, because the history
+// points at it.
 
 import { readFile } from "node:fs/promises";
 import { fileURLToPath } from "node:url";
@@ -211,6 +217,7 @@ async function withAccessRetry(fn, tries = 12) {
 async function main() {
   const args = process.argv.slice(2);
   const dryRun = args.includes("--dry-run");
+  const prune = args.includes("--prune");
   const file = args.find((a) => !a.startsWith("--")) ?? fileURLToPath(new URL("./stands.sample.yaml", import.meta.url));
 
   const cfg = parse(await readFile(file, "utf8"));
@@ -267,6 +274,24 @@ async function main() {
     removed += stale.length;
   }
   console.log(`  state: ${created} area document(s) created, ${removed} old device entr${removed === 1 ? "y" : "ies"} removed`);
+
+  if (prune) {
+    const siteId = docs[0].siteId;
+    const keep = new Set(docs.map((d) => d.id));
+    const { resources: existing } = await catalog.items
+      .query({ query: "SELECT c.id FROM c WHERE c.siteId = @siteId", parameters: [{ name: "@siteId", value: siteId }] }, { partitionKey: siteId })
+      .fetchAll();
+    const gone = existing.filter((d) => !keep.has(d.id));
+    for (const d of gone) await catalog.item(d.id, siteId).delete();
+
+    const { resources: areaDocs } = await state.items.query("SELECT c.id, c.areaId FROM c").fetchAll();
+    const goneAreas = areaDocs.filter((d) => !areaIds.includes(d.areaId));
+    for (const d of goneAreas) await state.item(d.id, d.areaId).delete();
+
+    console.log(`  prune: ${gone.length} catalog document(s) and ${goneAreas.length} area state document(s) deleted`);
+    for (const d of gone) console.log(`    - ${d.id}`);
+    for (const d of goneAreas) console.log(`    - state ${d.id}`);
+  }
 }
 
 if (process.argv[1] && fileURLToPath(import.meta.url) === process.argv[1]) {

@@ -8,10 +8,14 @@
 #   -l, --location REGION      Azure region (default: switzerlandnorth)
 #   -n, --account NAME         Cosmos DB account name (default: velostands-<hash>)
 #   -s, --subscription ID      Subscription (default: 1bd6c9df-485a-459f-9a7c-6ce143b7909d)
+#   -t, --tenant ID            Entra ID tenant of the subscription; you are signed in
+#                              to it if needed (default: 7ec7369b-a72e-427e-a97e-69edbb7df5d9)
 #       --grant OBJECT_ID      Give another identity data access, e.g. the Function
 #                              App's managed identity. Repeatable.
 #       --sync [FILE]          Load stands, devices and assignments into the catalog
-#                              (default file: stands.sample.yaml next to this script)
+#                              (default file: stands.yaml next to this script)
+#       --prune                With --sync: also delete catalog entries and area states
+#                              that are no longer in the file (e.g. sample data)
 #       --periodic-backup      Periodic backup instead of continuous 7-day
 #       --no-keys              Turn off account keys (Entra ID access only)
 #   -h, --help                 Show this help
@@ -27,9 +31,11 @@ RG="nag-rg-slotinvaders"
 LOCATION="switzerlandnorth"
 ACCOUNT=""
 SUBSCRIPTION="1bd6c9df-485a-459f-9a7c-6ce143b7909d"
+TENANT="7ec7369b-a72e-427e-a97e-69edbb7df5d9"
 GRANTS=()
 DO_SYNC=false
-SYNC_FILE="$SCRIPT_DIR/stands.sample.yaml"
+SYNC_FILE="$SCRIPT_DIR/stands.yaml"
+PRUNE=false
 BACKUP_MODE="Continuous7Days"
 DISABLE_KEYS=false
 DEPLOYMENT="velostands-cosmos"
@@ -42,10 +48,12 @@ while [[ $# -gt 0 ]]; do
     -l|--location)       LOCATION="${2:?$1 needs a value}"; shift 2 ;;
     -n|--account)        ACCOUNT="${2:?$1 needs a value}"; shift 2 ;;
     -s|--subscription)   SUBSCRIPTION="${2:?$1 needs a value}"; shift 2 ;;
+    -t|--tenant)         TENANT="${2:?$1 needs a value}"; shift 2 ;;
     --grant)             GRANTS+=("${2:?$1 needs an object ID}"); shift 2 ;;
     --sync)
       DO_SYNC=true
       if [[ $# -gt 1 && "$2" != -* ]]; then SYNC_FILE="$2"; shift 2; else shift; fi ;;
+    --prune)             PRUNE=true; shift ;;
     --periodic-backup)   BACKUP_MODE="Periodic"; shift ;;
     --no-keys)           DISABLE_KEYS=true; shift ;;
     -h|--help)           usage; exit 0 ;;
@@ -60,6 +68,10 @@ if ! command -v az >/dev/null 2>&1; then
   echo "The Azure CLI is missing. Install it (https://aka.ms/installazurecli) or use Azure Cloud Shell." >&2
   exit 1
 fi
+if $PRUNE && ! $DO_SYNC; then
+  echo "--prune only works together with --sync." >&2
+  exit 1
+fi
 if $DO_SYNC && ! command -v node >/dev/null 2>&1; then
   echo "--sync needs Node.js 20 or later." >&2
   exit 1
@@ -69,18 +81,47 @@ if $DO_SYNC && [[ ! -f "$SYNC_FILE" ]]; then
   exit 1
 fi
 
-az account show -o none 2>/dev/null || az login -o none
+# --- Sign-in: tenant and subscription -----------------------------------------
 # Every call below names the subscription explicitly, so the script never
 # depends on (or changes) the default subscription of your az login.
-if [[ -n "$SUBSCRIPTION" ]]; then
-  SUB_ID="$(az account show --subscription "$SUBSCRIPTION" --query id -o tsv 2>/dev/null || true)"
-  if [[ -z "$SUB_ID" ]]; then
-    echo "Your Azure login can't see subscription \"$SUBSCRIPTION\"." >&2
-    echo "Run 'az account list -o table' to see the ones it can. If the subscription belongs to another directory, sign in there with 'az login --tenant <tenant-id>' and run the script again." >&2
-    exit 1
-  fi
-else
-  SUB_ID="$(az account show --query id -o tsv)"
+
+connect_tenant() {
+  local login=(login -o none)
+  if [[ -n "$TENANT" ]]; then login+=(--tenant "$TENANT"); fi
+  step "Signing in to tenant $TENANT"
+  az "${login[@]}"
+}
+
+# Prints the subscription ID if this login can see it in the right tenant.
+resolve_subscription() {
+  local query=(account show --query "[id, tenantId]" -o tsv) found id tenant_id
+  if [[ -n "$SUBSCRIPTION" ]]; then query+=(--subscription "$SUBSCRIPTION"); fi
+  found="$(az "${query[@]}" 2>/dev/null | tr -d '\r')" || return 0
+  read -r id tenant_id <<<"$found"
+  if [[ -n "$TENANT" && "$tenant_id" != "$TENANT" ]]; then return 0; fi
+  printf '%s' "$id"
+}
+
+# The object ID of whoever is signed in (user or service principal), read from
+# an access token for the subscription's tenant, so it is the ID that tenant knows.
+caller_object_id() {
+  local payload
+  payload="$(az account get-access-token "${SUB[@]}" --query accessToken -o tsv 2>/dev/null | tr -d '\r' | cut -d. -f2 | tr '_-' '/+')" || return 0
+  case $(( ${#payload} % 4 )) in 2) payload="$payload==" ;; 3) payload="$payload=" ;; esac
+  printf '%s' "$payload" | base64 -d 2>/dev/null | sed -n 's/.*"oid" *: *"\([^"]*\)".*/\1/p' || true
+}
+
+az account show -o none 2>/dev/null || connect_tenant
+SUB_ID="$(resolve_subscription)"
+if [[ -z "$SUB_ID" ]]; then
+  # Signed in elsewhere (another tenant, or a login without this subscription).
+  connect_tenant
+  SUB_ID="$(resolve_subscription)"
+fi
+if [[ -z "$SUB_ID" ]]; then
+  echo "Subscription \"$SUBSCRIPTION\" was not found in tenant \"$TENANT\" for this login." >&2
+  echo "Run 'az account list -o table' to see what you can reach, and check both IDs." >&2
+  exit 1
 fi
 SUB=(--subscription "$SUB_ID")
 SUB_NAME="$(az account show "${SUB[@]}" --query name -o tsv)"
@@ -107,13 +148,12 @@ fi
 
 # --- Who gets data access ----------------------------------------------------
 # The caller (a user, or a service principal in CI) plus any --grant IDs.
-CALLER_TYPE="$(az account show "${SUB[@]}" --query user.type -o tsv)"
-if [[ "$CALLER_TYPE" == "user" ]]; then
-  CALLER_ID="$(az ad signed-in-user show --query id -o tsv 2>/dev/null || true)"
+CALLER_ID="$(caller_object_id)"
+if [[ -n "$CALLER_ID" ]]; then
+  GRANTS+=("$CALLER_ID")
 else
-  CALLER_ID="$(az ad sp show --id "$(az account show "${SUB[@]}" --query user.name -o tsv)" --query id -o tsv 2>/dev/null || true)"
+  echo "Warning: couldn't read your object ID, so you won't get data access. Run again with --grant <your object ID>." >&2
 fi
-if [[ -n "$CALLER_ID" ]]; then GRANTS+=("$CALLER_ID"); fi
 
 PRINCIPALS="[]"
 if [[ ${#GRANTS[@]} -gt 0 ]]; then
@@ -145,14 +185,17 @@ DATABASE="$(output databaseName)"
 if $DO_SYNC; then
   step "Loading $(basename "$SYNC_FILE") into the catalog"
   (cd "$SCRIPT_DIR" && npm install --no-audit --no-fund --loglevel=error)
+  SYNC_ARGS=("$SYNC_FILE")
+  if $PRUNE; then SYNC_ARGS+=(--prune); fi
   COSMOS_ENDPOINT="$ENDPOINT" COSMOS_DATABASE="$DATABASE" \
-    node "$SCRIPT_DIR/sync-catalog.mjs" "$SYNC_FILE"
+    node "$SCRIPT_DIR/sync-catalog.mjs" "${SYNC_ARGS[@]}"
 fi
 
 # --- Summary -----------------------------------------------------------------
 cat <<SUMMARY
 
 Done.
+  Tenant          $TENANT
   Subscription    $SUB_NAME ($SUB_ID)
   Resource group  $RG
   Account         $ACCOUNT_NAME (serverless, $LOCATION, backup: $BACKUP_MODE)

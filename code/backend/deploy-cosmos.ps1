@@ -18,13 +18,19 @@
   Cosmos DB account name. Default: velostands-<hash>.
 .PARAMETER Subscription
   Subscription name or ID. Default: 1bd6c9df-485a-459f-9a7c-6ce143b7909d.
+.PARAMETER Tenant
+  Entra ID tenant (directory) of the subscription. Default: 7ec7369b-a72e-427e-a97e-69edbb7df5d9.
+  The script signs you in to it if your current login is elsewhere.
 .PARAMETER Grant
   Object IDs of more identities that get data access, e.g. the Function App's
   managed identity. Separate several with commas.
 .PARAMETER Sync
   Load stands, devices and assignments into the catalog.
 .PARAMETER SyncFile
-  Stands file for -Sync. Default: stands.sample.yaml next to this script.
+  Stands file for -Sync. Default: stands.yaml next to this script.
+.PARAMETER Prune
+  With -Sync: also delete catalog entries and area states that are no longer
+  in the stands file, e.g. earlier sample data. Not for retiring devices.
 .PARAMETER PeriodicBackup
   Periodic backup instead of continuous 7-day.
 .PARAMETER NoKeys
@@ -35,6 +41,8 @@
 .EXAMPLE
   .\deploy-cosmos.ps1 -Sync -SyncFile ..\config\stands.yaml
 .EXAMPLE
+  .\deploy-cosmos.ps1 -Sync -Prune
+.EXAMPLE
   .\deploy-cosmos.ps1 -Grant 11111111-2222-3333-4444-555555555555
 #>
 [CmdletBinding()]
@@ -43,9 +51,11 @@ param(
     [string]$Location = 'switzerlandnorth',
     [string]$Account,
     [string]$Subscription = '1bd6c9df-485a-459f-9a7c-6ce143b7909d',
+    [string]$Tenant = '7ec7369b-a72e-427e-a97e-69edbb7df5d9',
     [string[]]$Grant = @(),
     [switch]$Sync,
     [string]$SyncFile,
+    [switch]$Prune,
     [switch]$PeriodicBackup,
     [switch]$NoKeys
 )
@@ -53,7 +63,8 @@ param(
 $ErrorActionPreference = 'Stop'
 $Deployment = 'velostands-cosmos'
 $BackupMode = if ($PeriodicBackup) { 'Periodic' } else { 'Continuous7Days' }
-if (-not $SyncFile) { $SyncFile = Join-Path $PSScriptRoot 'stands.sample.yaml' }
+if (-not $SyncFile) { $SyncFile = Join-Path $PSScriptRoot 'stands.yaml' }
+if ($Prune -and -not $Sync) { throw '-Prune only works together with -Sync.' }
 
 function Write-Step([string]$Text) {
     Write-Host ''
@@ -91,21 +102,56 @@ if ($Sync) {
     $SyncFile = (Resolve-Path -LiteralPath $SyncFile).Path
 }
 
-if (-not (Invoke-Az 'account', 'show', '--query', 'id', '-o', 'tsv' -AllowFail)) {
-    Invoke-Az 'login', '-o', 'none' | Out-Null
-}
+# --- Sign-in: tenant and subscription -----------------------------------------
 # Every call below names the subscription explicitly, so the script never
 # depends on (or changes) the default subscription of your az login.
-if ($Subscription) {
-    $subId = Invoke-Az 'account', 'show', '--subscription', $Subscription, '--query', 'id', '-o', 'tsv' -AllowFail
-    if (-not $subId) {
-        Write-Host "Your Azure login can't see subscription '$Subscription'." -ForegroundColor Red
-        Write-Host "Run 'az account list -o table' to see the ones it can. If the subscription belongs to another directory, sign in there with 'az login --tenant <tenant-id>' and run the script again." -ForegroundColor Red
-        exit 1
+
+function Connect-Tenant {
+    $loginArgs = @('login', '-o', 'none')
+    if ($Tenant) { $loginArgs += @('--tenant', $Tenant) }
+    Write-Step "Signing in to tenant $Tenant"
+    Invoke-Az $loginArgs | Out-Null
+}
+
+# Returns the subscription ID if this login can see it in the right tenant, else $null.
+function Resolve-Subscription {
+    $query = @('account', 'show', '--query', '[id, tenantId]', '-o', 'tsv')
+    if ($Subscription) { $query += @('--subscription', $Subscription) }
+    $found = Invoke-Az $query -AllowFail
+    if (-not $found) { return $null }
+    $id, $tenantId = $found -split '\s+'
+    if ($Tenant -and $tenantId -ne $Tenant) { return $null }
+    return $id
+}
+
+# The object ID of whoever is signed in (user or service principal), read from
+# an access token for the tenant, so it is the ID that tenant knows.
+function Get-CallerObjectId {
+    $tokenArgs = @('account', 'get-access-token', '--subscription', $subId, '--query', 'accessToken', '-o', 'tsv')
+    $token = Invoke-Az $tokenArgs -AllowFail
+    if (-not $token) { return $null }
+    try {
+        $payload = $token.Split('.')[1].Replace('-', '+').Replace('_', '/')
+        switch ($payload.Length % 4) { 2 { $payload += '==' } 3 { $payload += '=' } }
+        $claims = [Text.Encoding]::UTF8.GetString([Convert]::FromBase64String($payload)) | ConvertFrom-Json
+        return $claims.oid
+    }
+    catch {
+        return $null
     }
 }
-else {
-    $subId = Invoke-Az 'account', 'show', '--query', 'id', '-o', 'tsv'
+
+if (-not (Invoke-Az 'account', 'show', '--query', 'id', '-o', 'tsv' -AllowFail)) { Connect-Tenant }
+$subId = Resolve-Subscription
+if (-not $subId) {
+    # Signed in elsewhere (another tenant, or a login without this subscription).
+    Connect-Tenant
+    $subId = Resolve-Subscription
+}
+if (-not $subId) {
+    Write-Host "Subscription '$Subscription' was not found in tenant '$Tenant' for this login." -ForegroundColor Red
+    Write-Host "Run 'az account list -o table' to see what you can reach, and check both IDs." -ForegroundColor Red
+    exit 1
 }
 $sub = @('--subscription', $subId)
 $subName = Invoke-Az (@('account', 'show', '--query', 'name', '-o', 'tsv') + $sub)
@@ -132,13 +178,9 @@ if ($regState -eq 'NotRegistered' -or $regState -eq 'Unregistered') {
 
 # --- Who gets data access ----------------------------------------------------
 # The caller (a user, or a service principal in CI) plus any -Grant IDs.
-$callerType = Invoke-Az (@('account', 'show', '--query', 'user.type', '-o', 'tsv') + $sub)
-if ($callerType -eq 'user') {
-    $callerId = Invoke-Az 'ad', 'signed-in-user', 'show', '--query', 'id', '-o', 'tsv' -AllowFail
-}
-else {
-    $spName = Invoke-Az (@('account', 'show', '--query', 'user.name', '-o', 'tsv') + $sub)
-    $callerId = Invoke-Az 'ad', 'sp', 'show', '--id', $spName, '--query', 'id', '-o', 'tsv' -AllowFail
+$callerId = Get-CallerObjectId
+if (-not $callerId) {
+    Write-Warning "Couldn't read your object ID, so you won't get data access. Run again with -Grant <your object ID>."
 }
 $principals = @(@($Grant) + @($callerId) | Where-Object { $_ } | Sort-Object -Unique)
 
@@ -196,13 +238,16 @@ if ($Sync) {
     }
     $env:COSMOS_ENDPOINT = $endpoint
     $env:COSMOS_DATABASE = $database
-    & node (Join-Path $PSScriptRoot 'sync-catalog.mjs') $SyncFile
+    $syncArgs = @((Join-Path $PSScriptRoot 'sync-catalog.mjs'), $SyncFile)
+    if ($Prune) { $syncArgs += '--prune' }
+    & node @syncArgs
     if ($LASTEXITCODE -ne 0) { throw 'The catalog sync failed.' }
 }
 
 # --- Summary -----------------------------------------------------------------
 Write-Host ''
 Write-Host 'Done.' -ForegroundColor Green
+Write-Host "  Tenant          $Tenant"
 Write-Host "  Subscription    $subName ($subId)"
 Write-Host "  Resource group  $ResourceGroup"
 Write-Host "  Account         $accountName (serverless, $Location, backup: $BackupMode)"

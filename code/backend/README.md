@@ -8,7 +8,8 @@ Creates the serverless Cosmos DB for the Velo Stands backend and, optionally, lo
 | `deploy-cosmos.sh` | The same script for Bash (Linux, macOS, Cloud Shell). |
 | `cosmos.bicep` | The infrastructure as code: account, database, four containers and data access. |
 | `sync-catalog.mjs` | Checks a stands file and loads it into the `catalog` container. |
-| `stands.sample.yaml` | Example stands file: one area, one stand, two devices. |
+| `stands.yaml` | The real stands file: 6 areas, 6 stands, 11 devices. The scripts load it by default. |
+| `stands.sample.yaml` | Small example with one area, one stand and two devices, including a device swap. |
 | `package.json` | Dependencies of the sync script. |
 
 ## Run it
@@ -36,7 +37,7 @@ chmod +x deploy-cosmos.sh
 ./deploy-cosmos.sh --sync
 ```
 
-That creates a serverless account in `nag-rg-slotinvaders` in subscription `1bd6c9df-485a-459f-9a7c-6ce143b7909d`, in Switzerland North. It gives you read and write access to the data and loads `stands.sample.yaml`. The script never creates or changes the resource group itself, and stops if it can't find it. A new account takes a few minutes. Running the script again is safe: everything is updated in place, and live counts in `state` are kept.
+That creates a serverless account in `nag-rg-slotinvaders` in subscription `1bd6c9df-485a-459f-9a7c-6ce143b7909d` (tenant `7ec7369b-a72e-427e-a97e-69edbb7df5d9`), in Switzerland North. It gives you read and write access to the data and loads `stands.yaml`. The script never creates or changes the resource group itself, and stops if it can't find it. A new account takes a few minutes. Running the script again is safe: everything is updated in place, and live counts in `state` are kept.
 
 | PowerShell | Bash | Default | |
 |---|---|---|---|
@@ -44,8 +45,10 @@ That creates a serverless account in `nag-rg-slotinvaders` in subscription `1bd6
 | `-Location` | `-l`, `--location` | `switzerlandnorth` | If the region has no capacity for new accounts, try `germanywestcentral` |
 | `-Account` | `-n`, `--account` | `velostands-<hash>` | Must be unique across Azure |
 | `-Subscription` | `-s`, `--subscription` | `1bd6c9df-485a-459f-9a7c-6ce143b7909d` | |
+| `-Tenant` | `-t`, `--tenant` | `7ec7369b-a72e-427e-a97e-69edbb7df5d9` | The subscription's tenant. If your login is in another tenant, the script signs you in to this one. |
 | `-Grant <id>,<id>` | `--grant <id>` (repeatable) | | More identities with data access, such as the Function App's managed identity |
-| `-Sync` `-SyncFile <file>` | `--sync [file]` | `stands.sample.yaml` | Loads stands, devices and assignments into `catalog` |
+| `-Sync` `-SyncFile <file>` | `--sync [file]` | `stands.yaml` | Loads stands, devices and assignments into `catalog` |
+| `-Prune` | `--prune` | off | With the sync: also deletes catalog entries and area states that are no longer in the file, such as earlier sample data. Not for retiring devices. |
 | `-PeriodicBackup` | `--periodic-backup` | off | Use this if the region refuses continuous backup |
 | `-NoKeys` | `--no-keys` | off | Turns off account keys, so only Entra ID identities get in |
 
@@ -115,6 +118,6 @@ A replacement device gets its own id and key. In the stands file:
 1. Add the new device (`pnpm device:add cam-03 …`).
 2. Set the old device to `status: retired` and add `to:` to its assignment.
 3. Add an assignment for the new device that starts on the same date.
-4. Run `.\deploy-cosmos.ps1 -Sync -SyncFile config\stands.yaml` (or `./deploy-cosmos.sh --sync config/stands.yaml`) again.
+4. Run `./deploy-cosmos.ps1 -Sync` (or `./deploy-cosmos.sh --sync`) again.
 
 The stand's history and trend rows carry on, because they are stored per stand.
