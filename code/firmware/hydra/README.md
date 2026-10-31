@@ -1,4 +1,4 @@
-# mule — on-device YOLO bike counter
+# hydra — on-device YOLO bike counter
 
 M5Stack AtomS3R-CAM-M12 (ESP32-S3 + OV3660). Runs the Espressif ESP-DL
 `coco_detect` YOLO11n model on every captured frame, counts the detections
@@ -7,13 +7,19 @@ whose COCO class is `bicycle`, and POSTs that integer to the backend as a
 `/api/v1/debug/images` so the debug app has something to look at. The full
 frame stays in RAM; only the count leaves the device.
 
+**Mounting.** A YOLO stand uses **two** of these cameras, one top-left and
+one top-right of the row, each angled **≈ 30°** downward into the stand so
+the two viewpoints cross-check and together cover every bay. `hydra` and its
+twin `mule` are built identically; which one lands where is set by the
+`stand:` on each device in `stands.yaml`.
+
 Everything else — authentication, endpoints, error codes — matches
 [`code/firmware/README.md`](../README.md).
 
 ## Build toolchain
 
-Unlike `thor` and `hydra`, mule is **ESP-IDF**, not Arduino. ESP-DL isn't
-packaged for the Arduino core, and the inference runs on the device.
+Unlike `thor` (Arduino), hydra is **ESP-IDF**. ESP-DL isn't packaged for the
+Arduino core, and the inference runs on the device.
 
 Requirements:
 

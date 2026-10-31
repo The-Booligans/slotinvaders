@@ -52,22 +52,27 @@ see; the app shows you where to park before you arrive.
 The challenge is explicit: **no faces, no license plates, no identifying or
 tracking individuals.** We take that further.
 
-**Counting without cameras.** Each stand uses non-image sensors (ToF arrays,
-LiDAR, mmWave radar, ultrasonic) or does inference on-device. The sensor stays
-local; only one integer — the number of bikes it currently sees — reaches the
-backend. There is no image to lose, store or leak.
+We offer **two on-device solutions**. Both report only the integer; the image
+or point cloud never leaves the stand.
 
-We test every sensor we can get our hands on and record the numbers in
+- **LiDAR (preferred).** One 360° RPLidar C1 head per stand, mounted on the
+  ceiling. Works day, night, rain, snow — the signal is depth, not light.
+- **On-device YOLO on ESP32 cameras.** Where no LiDAR mounting is available.
+  Each stand gets **two cameras**, top-left and top-right at ≈ 30° downward
+  into the stand, both running YOLO11 locally. The frame stays in RAM; only
+  the count is POSTed.
+
+Details and numbers in
 [`documentation/sensor-evaluation.md`](documentation/sensor-evaluation.md).
-The best result per stand wins.
 
 ## The idea in one picture
 
 ```
  ┌─ Field ──────────────────────┐      ┌─ Azure ─────────────────┐      ┌─ Clients ──┐
- │ ToF · LiDAR · mmWave         │─────▶│ Functions · Cosmos DB   │─────▶│ PWA        │
- │ on-device CV                 │      │ Web PubSub              │      │ iOS/Android│
- │   ─────  integer only  ────▶ │      │                         │      │ Landing    │
+ │ LiDAR  (1× per stand)        │─────▶│ Functions · Cosmos DB   │─────▶│ PWA        │
+ │ or on-device YOLO (2× per    │      │ Web PubSub              │      │ iOS/Android│
+ │   stand, 30° top-L + top-R)  │      │                         │      │ Landing    │
+ │   ─────  integer only  ────▶ │      │                         │      │            │
  └──────────────────────────────┘      └─────────────────────────┘      └────────────┘
 ```
 
@@ -112,7 +117,7 @@ After changing app code, repeat steps 3–5 so Android gets the latest build.
 
 - **Front ends** — Next.js (static export) · Serwist (PWA) · Capacitor (iOS/Android) · shadcn/ui · Tailwind · three.js + R3F
 - **Backend** — Azure Functions (Node 22, TypeScript) · Cosmos DB serverless · Web PubSub
-- **Sensors** — ST VL53L5CX ToF · RPLidar C1 · mmWave radar · ultrasonic arrays · on-device CV on ESP32-S3
+- **Counting** — RPLidar C1 on an AtomS3 (default) · AtomS3R-CAM-M12 running ESP-DL YOLO11n on-device (two per stand, top-L + top-R at 30°)
 - **Shared** — Zod schemas, TypeScript contracts, `computeViews` pure function
 - **Tooling** — pnpm workspaces · Oxlint · Oxfmt · Vitest · Terraform
 

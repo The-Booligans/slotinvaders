@@ -6,6 +6,30 @@ The goal is to count bikes **without ever sending an image off the stand**. This
 document is the live record of every sensor we try, how well it works, and why
 we pick what we pick.
 
+## The two solutions we deploy
+
+Every stand uses one of these two. Both run entirely on-device; only the
+integer count leaves the stand.
+
+1. **LiDAR (preferred).** A 360° RPLidar C1 head on an AtomS3, mounted on the
+   ceiling or a beam, splits the arc into one angular bay per slot and
+   thresholds the nearest return. One device per stand, no image data by
+   construction, and the signal is depth — so it works in rain, snow, fog,
+   direct sun and darkness. This is the default choice whenever a mounting
+   point exists. Firmware: [`code/firmware/thor`](../code/firmware/thor).
+2. **On-device YOLO on ESP32-CAM.** Where no LiDAR mount is available. An
+   AtomS3R-CAM-M12 runs the Espressif ESP-DL `coco_detect` YOLO11n model on
+   every captured frame and POSTs the count of `bicycle` detections. The
+   frame stays in RAM; only the integer leaves the device. Each stand uses
+   **two cameras**, mounted **top-left** and **top-right** of the row and
+   angled **≈ 30°** downward into the stand, so the two viewpoints
+   cross-check and together cover the full line of bays. Firmware:
+   [`code/firmware/mule`](../code/firmware/mule) and
+   [`code/firmware/hydra`](../code/firmware/hydra).
+
+The rest of this document is the record of candidates we evaluated before
+settling on these two, so the choice stays defensible.
+
 ## What we score
 
 For each candidate we record:
@@ -115,11 +139,13 @@ spike for the method.
 
 ## Decision rule
 
-Per stand, in order:
+Per stand:
 
-1. Pick the cheapest candidate whose on-site accuracy clears the bar for that
-   stand's size and layout.
-2. Record the choice and the measured numbers in
+1. If a ceiling or beam mount can see the whole row, deploy **LiDAR**. One
+   device per stand.
+2. Otherwise deploy **two YOLO cameras**, top-left and top-right at ≈ 30°
+   downward into the stand.
+3. Record the choice and the measured numbers in
    `code/backend/velo-stands-cosmos/stands.yaml` as a comment next to the
    device.
 

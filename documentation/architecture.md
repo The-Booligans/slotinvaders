@@ -10,11 +10,21 @@ Devices at each bike stand count the bikes they see and report the number — ne
 
 This is a privacy-by-design challenge. We count **without ever sending an image off the device**:
 
-- Each device turns its raw signal (depth map, point cloud, ToF ranges, on-board inference) into one integer: the number of bikes it currently sees.
+- Each device turns its raw signal (point cloud, on-device YOLO detections) into one integer: the number of bikes it currently sees.
 - Only that integer, plus a few housekeeping fields, reaches the backend.
 - There is no cloud image endpoint. The sensor and the firmware are the whole pipeline.
 
 See [sensor-evaluation.md](sensor-evaluation.md) for the sensors we test and the numbers we measure.
+
+## Counting: two solutions
+
+A stand has slots, and one or more devices watch them. We offer two sensor types; the stand picks one based on size, sightline and where we can mount hardware.
+
+**LiDAR — preferred.** A single 360° head on the ceiling scans the full arc, splits it into one angular bay per slot and thresholds the nearest return per bay. One device covers a whole stand, and because the signal is depth and not an image, it is unaffected by light, rain and snow — day, night, all weather. This is the first choice whenever a ceiling or beam mount is available. The firmware is in [`code/firmware/thor`](../code/firmware/thor).
+
+**On-device YOLO on ESP32 — where LiDAR can't be mounted.** An AtomS3R-CAM runs the Espressif ESP-DL `coco_detect` YOLO11n model on every captured frame and POSTs the count of `bicycle` detections. The frame stays in RAM; only the integer leaves the device. Each stand needs **two cameras**, mounted **top-left** and **top-right** of the stand and angled **≈ 30°** downward into it, so the two viewpoints cross-check and together cover the full row. The backend sums the two counts like any other devices on a stand. The firmware is in [`code/firmware/mule`](../code/firmware/mule) and [`code/firmware/hydra`](../code/firmware/hydra); the debug app receives the last analysed frame as a side channel, held in memory only.
+
+Both solutions use the same `POST /v1/readings` path and the same per-device API key.
 
 The first version only covers the API, the shared contracts, the tools and an unstyled PWA. See [build-v1.md](build-v1.md).
 
@@ -29,8 +39,8 @@ The first version only covers the API, the shared contracts, the tools and an un
 | Config | YAML in the repo, validated with Zod in CI. |
 | Stands | A stand has a number of slots and any number of devices. Each device sends the number of bikes it sees. Free slots = slots − the sum of all its devices' counts. |
 | Devices | Devices on one stand never watch the same bikes. There are no slot ranges, no voting and no estimates for unwatched places. |
-| Counting | On the device, from a non-image sensor or on-device CV. The firmware is the whole pipeline; only the integer count leaves the stand. |
-| Sensor choice | Decided per area, from measurements. See [sensor-evaluation.md](sensor-evaluation.md). We expect to mix: ToF/LiDAR for small/covered stands, on-device CV on ESP32-S3 or a small SBC for wider open racks. |
+| Counting | Two on-device solutions, both reporting only the integer: **LiDAR** (preferred, one head per stand, works day/night/rain/snow) and **on-device YOLO on ESP32** where LiDAR can't be mounted (two cameras per stand, top-left and top-right, 30° downward into the stand). |
+| Sensor choice | Decided per stand. LiDAR by default; on-device YOLO when the stand has no mounting point a LiDAR can see from. See [sensor-evaluation.md](sensor-evaluation.md). |
 | Images | The ingest path never sees one. The debug app exposes a side channel for cameras to upload the latest frame they analysed; those bytes are kept in memory only and never written to Cosmos. |
 
 ## How the pieces connect
@@ -38,7 +48,7 @@ The first version only covers the API, the shared contracts, the tools and an un
 ```mermaid
 flowchart LR
   subgraph Field
-    D["Devices ×n<br/>count on device<br/>(ToF · LiDAR · on-device CV)"]
+    D["Devices ×n<br/>count on device<br/>(LiDAR · on-device YOLO)"]
     S["Simulator<br/>same API, sim keys"]
   end
   C[("velo-stands-cosmos/stands.yaml<br/>areas · stands · devices")]
@@ -65,7 +75,7 @@ flowchart LR
 
 | Part | Tech | Job |
 |---|---|---|
-| Devices | ToF arrays, LiDAR (e.g. RPLidar C1), mmWave radar, ultrasonic arrays, on-device CV on ESP32-S3 — one per stand or several | Count locally, every 60 s or on change, and send only the integer. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
+| Devices | **LiDAR** (RPLidar C1 on an AtomS3) — one per stand, scans a 360° arc and classifies each slot by depth. **On-device YOLO** (AtomS3R-CAM-M12, ESP-DL YOLO11n) — two per stand, mounted top-left and top-right at 30° downward. Both count locally, every few seconds, and send only the integer. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
 | Sensor evaluation | `code/firmware/experiments/*` + `documentation/sensor-evaluation.md` | For each candidate sensor: wiring, firmware spike, bench + on-site accuracy, false-positive rate, cost, power, mounting constraints. The results pick what we deploy. |
 | Config | `code/backend/velo-stands-cosmos/stands.yaml` | The single source of truth for areas, stands and devices. CI validates it. The build copies it into the Function App, and copies a public subset (without hashes) into the front ends. |
 | API | Azure Functions, Node 22, TypeScript | Authenticates devices, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. |
@@ -120,8 +130,8 @@ flowchart LR
 
 ## What happens when a bike is parked
 
-1. Stand `fsw-1` at Flow South West has 20 slots and two devices. `tof-01` is a ToF array that counts occupied bays locally and sees 9 bikes; `lidar-01` is a LiDAR scanner that sees 8. Both send `POST /v1/readings`. Neither ever sends an image.
-2. The Function hashes the API key and finds the device in the bundled config, which gives it the stand and the mode. The device never says who it is in the request body.
+1. Stand `fsw-1` at Flow South West has 20 slots and two cameras (on-device YOLO), one top-left (`cam-l`) and one top-right (`cam-r`), each looking down at ≈30° into the stand. `cam-l` sees 9 bikes on its side of the row and `cam-r` sees 8 on the other. Both send `POST /v1/readings`. Neither ever sends an image.
+2. The Function hashes the API key and finds the device in the bundled config, which gives it the stand. The device never says who it is in the request body.
 3. The Function appends the reading to `readings` with its source and stores the device's latest count in `state`. The stand then has 20 − (9 + 8) = 3 free slots. The area total is the sum of its stands.
 4. A timer Function broadcasts the status of every stand through Web PubSub every 10 s, so every open client shows the new count within about 10 s.
 
@@ -149,23 +159,34 @@ stands:
   - id: fsw-1
     area: flow-sw
     slots: 20
+  - id: fsw-2
+    area: flow-sw
+    slots: 20
 
 devices:
-  # Non-image sensors or on-device CV, counting locally and sending only the integer
-  - id: tof-01
-    stand: fsw-1
-    hardware: vl53l5cx-array   # 8×8 ToF, one head per bay group
-    mode: device
-    keyHash: "sha256:9f2c…e41a"
+  # Solution A — LiDAR. One head per stand.
   - id: lidar-01
     stand: fsw-1
-    hardware: rplidar-c1
+    hardware: lidar            # RPLidar C1 on an AtomS3
     mode: device
     keyHash: "sha256:51b0…07cd"
     config:                    # device-specific knobs, fetched at boot
-      slots: 8                 #   how many slot bays the LiDAR covers
+      slots: 20                #   how many slot bays the LiDAR arc is split into
       freeMm: 850              #   < freeMm → bike, ≥ freeMm → free (both inside bikeRange)
       reportIntervalMs: 10000  #   how often to POST a reading
+
+  # Solution B — on-device YOLO. Two cameras per stand: top-left and
+  # top-right, both at ~30° downward into the stand.
+  - id: fsw2-cam-l
+    stand: fsw-2
+    hardware: yolo             # AtomS3R-CAM-M12, ESP-DL YOLO11n on-device
+    mode: device
+    keyHash: "sha256:9f2c…e41a"
+  - id: fsw2-cam-r
+    stand: fsw-2
+    hardware: yolo
+    mode: device
+    keyHash: "sha256:a4e1…22bd"
 
 settings:
   staleAfterSeconds: 300
