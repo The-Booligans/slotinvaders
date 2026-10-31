@@ -1,11 +1,16 @@
-import { BikeIcon } from "./icons";
+import Image from "next/image";
 
 export function AppHeader({ freeTotal }: { freeTotal: number }) {
   return (
     <header className="z-30 flex items-center gap-3 border-b border-black/5 bg-white/90 px-4 pb-3 pt-[max(0.75rem,env(safe-area-inset-top))] backdrop-blur-md">
-      <div className="grid size-9 place-items-center rounded-xl bg-[#2B7EB5] text-white shadow-sm">
-        <BikeIcon className="size-5" />
-      </div>
+      <Image
+        src="/icon.png"
+        alt=""
+        width={36}
+        height={36}
+        priority
+        className="size-9 rounded-xl shadow-sm"
+      />
       <div className="min-w-0 flex-1">
         <h1 className="truncate text-lg font-semibold leading-tight tracking-tight text-slate-900">
           Slot Invaders
