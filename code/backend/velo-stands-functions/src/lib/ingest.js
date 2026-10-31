@@ -4,12 +4,8 @@ const crypto = require("node:crypto");
 const { hashKey } = require("./catalog");
 const { validateReading } = require("./validate");
 const { computeStand, describeParts } = require("./occupancy");
-<<<<<<< Updated upstream
-const { reply: httpReply } = require("./http");
+const { reply, clientIp: getClientIp, round } = require("./http");
 const { deviceLog: defaultDeviceLog } = require("./device-log");
-=======
-const { createLogger, reply, clientIp: getClientIp, round } = require("./http");
->>>>>>> Stashed changes
 
 // POST /api/v1/readings
 //
@@ -24,7 +20,10 @@ const { createLogger, reply, clientIp: getClientIp, round } = require("./http");
 const RATE_LIMIT_MS = 5_000; // at most one request per device every 5 s
 const MAX_STATE_ATTEMPTS = 5; // retries when two devices of an area write at the same time
 
-<<<<<<< Updated upstream
+// The readings handler needs more than http.js's generic logger: every line
+// also gets appended to the per-device ring buffer the debug app reads back
+// through GET /api/v1/debug/devices/{deviceId}/logs. The device id is only
+// known after step 1, so the caller passes a getter instead of the value.
 function createLogger(context, verbose, { deviceLog, getDeviceId }) {
   const tag = `[readings ${String(context.invocationId ?? "local").slice(0, 8)}]`;
   const record = (level, message) => {
@@ -52,12 +51,6 @@ function createLogger(context, verbose, { deviceLog, getDeviceId }) {
   };
 }
 
-const reply = httpReply;
-
-const round = (n) => Math.round(n * 100) / 100;
-
-=======
->>>>>>> Stashed changes
 /**
  * @param {object} deps
  * @param {{ get: (opts?: {force?: boolean}) => Promise<{catalog: any, ageMs: number, reloaded: boolean}> }} deps.catalogCache
@@ -74,15 +67,11 @@ function createReadingsHandler({
 }) {
   return async function handleReading(request, context) {
     const started = Date.now();
-<<<<<<< Updated upstream
     let currentDeviceId = null;
     const log = createLogger(context, verbose, {
       deviceLog,
       getDeviceId: () => currentDeviceId,
     });
-=======
-    const log = createLogger(context, "readings", verbose);
->>>>>>> Stashed changes
     const receivedAt = now();
     const clientIp = getClientIp(request);
     let ru = 0;

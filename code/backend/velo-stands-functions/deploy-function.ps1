@@ -217,6 +217,32 @@ if (-not $SkipCode) {
     }
     Write-Host ("Functions to deploy ({0}): {1}" -f $sourceFunctions.Count, (($sourceFunctions | ForEach-Object { $_.BaseName }) -join ', '))
 
+    # Unresolved git merge markers in any .js file crash the Function host at
+    # load, which is how the live app ended up with zero routes once already.
+    $conflicted = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src') -Recurse -Filter *.js -File |
+        Select-String -SimpleMatch -Pattern '<<<<<<<', '=======', '>>>>>>>' -List |
+        ForEach-Object { $_.Path })
+    if ($conflicted.Count -gt 0) {
+        $relative = $conflicted | ForEach-Object { [System.IO.Path]::GetRelativePath($PSScriptRoot, $_) }
+        throw "Unresolved merge conflict markers found in: $($relative -join ', '). Resolve them before deploying."
+    }
+
+    # Even without markers a file can still throw at module load (bad require,
+    # typo, missing dep). Require each function file the same way the Azure
+    # Functions host does; a throw here is a 404-on-every-route in prod.
+    $nodeExe = (Get-Command node -ErrorAction SilentlyContinue)?.Source
+    if (-not $nodeExe) { $nodeExe = (Get-Command node.exe -ErrorAction SilentlyContinue)?.Source }
+    if ($nodeExe) {
+        $funcDir = Join-Path $PSScriptRoot 'src/functions'
+        $loadScript = "const fs=require('fs'),path=require('path');const d=process.argv[1];for(const f of fs.readdirSync(d).filter(f=>f.endsWith('.js'))){try{require(path.join(d,f));}catch(e){console.error(f+': '+(e.message||e));process.exitCode=1;}}"
+        & $nodeExe -e $loadScript $funcDir
+        if ($LASTEXITCODE -ne 0) {
+            throw "One or more function modules failed to load. Fix the errors above before deploying."
+        }
+    } else {
+        Write-Warning 'node not on PATH; skipping the module-load smoke test.'
+    }
+
     Write-Step 'Packaging the code'
     $staging = Join-Path ([IO.Path]::GetTempPath()) "velostands-function-$PID"
     $zip = "$staging.zip"

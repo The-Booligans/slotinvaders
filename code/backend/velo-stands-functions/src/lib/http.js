@@ -1,8 +1,8 @@
 "use strict";
 
-<<<<<<< Updated upstream
-// Small helpers that are shared by every HTTP function: a reply builder with
-// no-store cache headers and permissive CORS, plus a dedicated OPTIONS reply.
+// Small helpers shared by every HTTP function: JSON replies with no-store
+// cache headers and permissive CORS, a dedicated OPTIONS reply, a per-request
+// log-line prefix, and a couple of request helpers.
 //
 // CORS is wide open on purpose. The read endpoints hold public counts and the
 // debug endpoints are gated by not being advertised; nothing here is secret.
@@ -28,10 +28,6 @@ function preflight() {
   return { status: 204, headers: { ...CORS_HEADERS } };
 }
 
-module.exports = { reply, preflight, CORS_HEADERS };
-=======
-// Shared helpers for the HTTP functions: the log line prefix and JSON replies.
-
 /**
  * Log lines look like "[readings 7f3c9a12] ..."; the 8 characters are the start
  * of the invocation ID, so the lines of one request belong together.
@@ -49,10 +45,6 @@ function createLogger(context, name, verbose) {
   };
 }
 
-function reply(status, body, extraHeaders = {}) {
-  return { status, jsonBody: body, headers: { "Cache-Control": "no-store", ...extraHeaders } };
-}
-
 /** The caller's IP address without the port, for the log. */
 function clientIp(request) {
   return (request.headers.get("x-forwarded-for") ?? "unknown")
@@ -63,5 +55,4 @@ function clientIp(request) {
 
 const round = (n) => Math.round(n * 100) / 100;
 
-module.exports = { createLogger, reply, clientIp, round };
->>>>>>> Stashed changes
+module.exports = { reply, preflight, CORS_HEADERS, createLogger, clientIp, round };

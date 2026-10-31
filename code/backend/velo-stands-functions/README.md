@@ -93,17 +93,14 @@ Two devices in the same area can send at the same moment. The area document is t
 
 | File | |
 |---|---|
-<<<<<<< Updated upstream
 | `src/functions/readings.js` | Registers `POST /api/v1/readings` |
+| `src/functions/stands.js` | Registers `GET /api/v1/stands/{standId?}` |
 | `src/functions/config.js` | Registers `GET /api/v1/config` |
 | `src/functions/debug.js` | Registers `GET /api/v1/debug/devices` and `GET /api/v1/debug/devices/{deviceId}/logs` |
-=======
-| `src/functions/readings.js` | Registers the HTTP function `POST /api/v1/readings` |
-| `src/functions/stands.js` | Registers the HTTP function `GET /api/v1/stands/{standId?}` |
+| `src/functions/debug-images.js` | Registers `POST /api/v1/debug/images` and `GET /api/v1/debug/devices/{deviceId}/image` |
 | `src/lib/stands.js` | Stand status: state cache, totals, public response |
-| `src/lib/runtime.js` | Cosmos containers and caches shared by both functions |
-| `src/lib/http.js` | Log prefix and JSON replies |
->>>>>>> Stashed changes
+| `src/lib/runtime.js` | Cosmos containers and caches shared by all functions |
+| `src/lib/http.js` | Log prefix, JSON replies, CORS, OPTIONS preflight |
 | `src/lib/ingest.js` | The request flow and the log output |
 | `src/lib/debug.js` | Public config and debug handlers |
 | `src/lib/catalog.js` | Catalog cache and key check (SHA-256, compared in constant time) |
