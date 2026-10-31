@@ -17,7 +17,7 @@ const inter = Inter({
 });
 
 export const metadata: Metadata = {
-  title: "Space + Invaders — Find my Bike Slot",
+  title: "Slot + Invaders — Find my Bike Slot",
   description:
     "Live counts for every bike parking area on the Endress+Hauser Reinach campus. A BaselHack 2026 entry by The Booligans.",
 };

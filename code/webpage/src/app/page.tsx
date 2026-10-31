@@ -13,8 +13,8 @@ const team = [
 
 function Wordmark({ className = "wm--sm" }: { className?: string }) {
   return (
-    <span className={`wm ${className}`} aria-label="Space + Invaders">
-      <span className="wm-text">Space + Invaders</span>
+    <span className={`wm ${className}`} aria-label="Slot + Invaders">
+      <span className="wm-text">Slot + Invaders</span>
       <svg className="wm-mark" aria-hidden="true">
         <use href="#bike" />
       </svg>
@@ -33,13 +33,33 @@ export default function Page() {
       >
         <defs>
           <symbol id="bike" viewBox="0 0 100 100">
-            <rect x="0" y="0" width="100" height="100" fill="#22D3EE" />
+            <g fill="#22C55E" transform="translate(23 1) scale(1.6)">
+              <rect x="6" y="0" width="3" height="3" />
+              <rect x="24" y="0" width="3" height="3" />
+              <rect x="9" y="3" width="3" height="3" />
+              <rect x="21" y="3" width="3" height="3" />
+              <rect x="6" y="6" width="21" height="3" />
+              <rect x="3" y="9" width="6" height="3" />
+              <rect x="12" y="9" width="9" height="3" />
+              <rect x="24" y="9" width="6" height="3" />
+              <rect x="0" y="12" width="33" height="3" />
+              <rect x="0" y="15" width="3" height="3" />
+              <rect x="6" y="15" width="21" height="3" />
+              <rect x="30" y="15" width="3" height="3" />
+              <rect x="0" y="18" width="3" height="3" />
+              <rect x="6" y="18" width="3" height="3" />
+              <rect x="24" y="18" width="3" height="3" />
+              <rect x="30" y="18" width="3" height="3" />
+              <rect x="9" y="21" width="6" height="3" />
+              <rect x="18" y="21" width="6" height="3" />
+            </g>
             <g
               fill="none"
-              stroke="#FFFFFF"
+              stroke="#22D3EE"
               strokeWidth="6.5"
               strokeLinecap="round"
               strokeLinejoin="round"
+              transform="translate(-7.5 3) scale(1.15)"
             >
               <circle cx="27" cy="68" r="14" />
               <circle cx="73" cy="68" r="14" />
@@ -59,7 +79,7 @@ export default function Page() {
 
       <header className="site-header">
         <div className="container">
-          <a href="#top" aria-label="Space + Invaders home">
+          <a href="#top" aria-label="Slot + Invaders home">
             <Wordmark />
           </a>
           <nav className="site-nav" aria-label="Primary">
@@ -92,10 +112,6 @@ export default function Page() {
                 <a className="link-cta" href="#features">
                   Learn how →
                 </a>
-              </div>
-              <div className="hero-sig">
-                <Wordmark className="" />
-                <span className="micro">BaselHack 2026 · The Booligans</span>
               </div>
             </div>
           </div>

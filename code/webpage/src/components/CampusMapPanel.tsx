@@ -32,9 +32,8 @@ export function CampusMapPanel({ heroDesktop = false, debug = false }: Props) {
     return () => mq.removeEventListener("change", update);
   }, [heroDesktop]);
 
-  // in debug mode, pivot around the island centre so rotation is natural;
-  // offline, shift it so the island sits to the right of the hero card
-  const offset = !debug && wide ? ([-170, 0] as [number, number]) : undefined;
+  // shift the orbit target west so the island reads to the right of the hero card
+  const offset = wide ? ([-170, 0] as [number, number]) : undefined;
 
   return (
     <div className="campus-map">
