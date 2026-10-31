@@ -3,21 +3,21 @@ import {
   distance,
   formatAge,
   formatDistance,
+  groupByArea,
   NO_DATA_COLOR,
   LEVEL_COLOR,
   occupancyLevel,
   occupancyPercent,
   spotColor,
-  standLabel,
   toParkingSpots,
   totalFree,
   walkingMinutes,
 } from "./parking";
-import { STAND_POSITIONS } from "./stand-positions";
+import { AREA_POSITIONS } from "./area-positions";
 import type { StandStatus } from "./stands-api";
 
 const status = (id: string, patch: Partial<StandStatus> = {}): StandStatus => ({
-  id,
+  id: `${id}-1`,
   name: `Area ${id}, Stand 1`,
   areaId: id,
   areaName: `Area ${id}`,
@@ -32,36 +32,61 @@ const status = (id: string, patch: Partial<StandStatus> = {}): StandStatus => ({
 describe("toParkingSpots", () => {
   const positions: Record<string, [number, number]> = { near: [3, 4], far: [300, 400] };
 
-  it("maps the API fields and sorts by distance, unplaced stands last", () => {
+  it("maps the API fields and sorts by distance, unplaced areas last", () => {
     const spots = toParkingSpots([status("far"), status("lost"), status("near")], [0, 0], positions);
     expect(spots.map((s) => s.id)).toEqual(["near", "far", "lost"]);
     expect(spots.map((s) => s.distanceM)).toEqual([5, 500, null]);
-    expect(spots[0]).toMatchObject({
+    expect(spots[0]).toEqual({
+      id: "near",
       name: "Area near",
-      standLabel: "Stand 1",
       capacity: 20,
       occupied: 5,
       free: 15,
+      stale: false,
+      updatedAt: "2026-10-31T14:48:30.925Z",
       position: [3, 4],
+      distanceM: 5,
     });
     expect(spots[2].position).toBeNull();
   });
 
-  it("places every stand the backend currently has", () => {
-    const ids = ["flow-garage-north-1", "flow-garage-south-1", "flow-main-1", "flow-se-1", "flow-sw-1", "sternenhof-1"];
-    expect(Object.keys(STAND_POSITIONS).sort()).toEqual(ids);
+  it("places every area the backend currently has", () => {
+    const ids = ["flow-garage-north", "flow-garage-south", "flow-main", "flow-se", "flow-sw", "sternenhof"];
+    expect(Object.keys(AREA_POSITIONS).sort()).toEqual(ids);
   });
 });
 
-describe("standLabel", () => {
-  it("drops the area name from the stand name", () => {
-    expect(standLabel("Veloparking Flowtec, Stand 1", "Veloparking Flowtec")).toBe("Stand 1");
-    expect(standLabel("Odd name", "Veloparking Flowtec")).toBe("Odd name");
+describe("groupByArea", () => {
+  it("adds up all stands of an area into one spot", () => {
+    const [area, ...rest] = groupByArea([
+      status("a", { id: "a-1", currentOccupancy: 25, maxOccupancy: 20, free: 0, updatedAt: "2026-10-31T10:00:00Z" }),
+      status("a", { id: "a-2", currentOccupancy: 4, maxOccupancy: 30, free: 26, stale: true, updatedAt: null }),
+      status("a", { id: "a-3", currentOccupancy: 1, maxOccupancy: 10, free: 9, updatedAt: "2026-10-31T11:00:00Z" }),
+    ]);
+    expect(rest).toEqual([]);
+    // free is summed per stand: the 5 bikes over capacity in a-1 don't take slots in a-2
+    expect(area).toEqual({
+      id: "a",
+      name: "Area a",
+      capacity: 60,
+      occupied: 30,
+      free: 35,
+      stale: true,
+      updatedAt: "2026-10-31T11:00:00Z",
+    });
+  });
+
+  it("keeps areas apart and has no data until a stand reports", () => {
+    const areas = groupByArea([status("a", { updatedAt: null }), status("b"), status("a", { updatedAt: null })]);
+    expect(areas.map((a) => [a.id, a.updatedAt])).toEqual([
+      ["a", null],
+      ["b", "2026-10-31T14:48:30.925Z"],
+    ]);
   });
 });
 
 describe("totalFree", () => {
-  it("only counts stands that have reported", () => {
+  it("only counts areas that have reported", () => {
     const spots = toParkingSpots([status("a", { free: 7 }), status("b", { free: 20, updatedAt: null })], [0, 0], {});
     expect(totalFree(spots)).toBe(7);
     expect(totalFree(spots.slice(1))).toBeNull();

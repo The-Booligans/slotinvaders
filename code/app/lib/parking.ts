@@ -1,20 +1,22 @@
-import { STAND_POSITIONS } from "./stand-positions";
+import { AREA_POSITIONS } from "./area-positions";
 import type { StandStatus } from "./stands-api";
 
 export type OccupancyLevel = "free" | "busy" | "almost-full" | "full";
 
+/** One parking area: all of its stands added up. */
 export interface ParkingSpot {
+  /** area id, e.g. "flow-main" */
   id: string;
-  /** area name, e.g. "Veloparking Flowtec" */
+  /** area name, e.g. "Flow Main" */
   name: string;
-  /** what's left of the stand name, e.g. "Stand 1" */
-  standLabel: string;
   capacity: number;
   occupied: number;
   free: number;
+  /** true if any stand of the area is stale */
   stale: boolean;
+  /** latest report of any stand in the area, or null if none ever reported */
   updatedAt: string | null;
-  /** campus metres, +x east / +y north; null if the stand isn't placed on the map */
+  /** campus metres, +x east / +y north; null if the area isn't placed on the map */
   position: [number, number] | null;
   distanceM: number | null;
 }
@@ -28,30 +30,50 @@ export function distance([ax, ay]: [number, number], [bx, by]: [number, number])
   return Math.hypot(ax - bx, ay - by);
 }
 
-/** "Veloparking Flowtec, Stand 1" in area "Veloparking Flowtec" -> "Stand 1". */
-export function standLabel(name: string, areaName: string): string {
-  const prefix = `${areaName}, `;
-  return name.startsWith(prefix) ? name.slice(prefix.length) : name;
-}
+type AreaTotals = Omit<ParkingSpot, "position" | "distanceM">;
 
-/** Live stands as map spots, nearest first; stands without a map position go last. */
-export function toParkingSpots(
-  stands: StandStatus[],
-  from: [number, number] = MOCK_USER_POSITION,
-  positions: Record<string, [number, number]> = STAND_POSITIONS,
-): ParkingSpot[] {
-  return stands
-    .map((s) => {
-      const position = positions[s.id] ?? null;
-      return {
-        id: s.id,
+const latest = (a: string | null, b: string | null) => (a === null || (b !== null && b > a) ? b : a);
+
+/**
+ * Adds the stands up per area. Free slots are summed per stand, not taken as
+ * capacity minus occupied: a bike over capacity in one stand doesn't fill another.
+ */
+export function groupByArea(stands: StandStatus[]): AreaTotals[] {
+  const areas = new Map<string, AreaTotals>();
+  for (const s of stands) {
+    const a = areas.get(s.areaId);
+    if (!a) {
+      areas.set(s.areaId, {
+        id: s.areaId,
         name: s.areaName,
-        standLabel: standLabel(s.name, s.areaName),
         capacity: s.maxOccupancy,
         occupied: s.currentOccupancy,
         free: s.free,
         stale: s.stale,
         updatedAt: s.updatedAt,
+      });
+      continue;
+    }
+    a.capacity += s.maxOccupancy;
+    a.occupied += s.currentOccupancy;
+    a.free += s.free;
+    a.stale ||= s.stale;
+    a.updatedAt = latest(a.updatedAt, s.updatedAt);
+  }
+  return [...areas.values()];
+}
+
+/** Live stands as map spots, one per area, nearest first; areas without a map position go last. */
+export function toParkingSpots(
+  stands: StandStatus[],
+  from: [number, number] = MOCK_USER_POSITION,
+  positions: Record<string, [number, number]> = AREA_POSITIONS,
+): ParkingSpot[] {
+  return groupByArea(stands)
+    .map((area) => {
+      const position = positions[area.id] ?? null;
+      return {
+        ...area,
         position,
         distanceM: position ? Math.round(distance(from, position)) : null,
       };
@@ -63,7 +85,7 @@ export function hasData(spot: Pick<ParkingSpot, "updatedAt">): boolean {
   return spot.updatedAt !== null;
 }
 
-/** Free slots over the stands that have reported at least once, or null if none has. */
+/** Free slots over the areas that have reported at least once, or null if none has. */
 export function totalFree(spots: ParkingSpot[]): number | null {
   const reporting = spots.filter(hasData);
   return reporting.length ? reporting.reduce((sum, s) => sum + s.free, 0) : null;

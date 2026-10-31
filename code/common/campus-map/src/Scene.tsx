@@ -180,7 +180,8 @@ export function Scene({
         intensity={STYLE.sun.intensity}
         color={STYLE.sun.colour}
         castShadow
-        shadow-mapSize={[2048, 2048]}
+        // 2048 caused WebGL context loss on Pixel 10 (PowerVR GPU)
+        shadow-mapSize={[1024, 1024]}
         shadow-camera-left={-320}
         shadow-camera-right={320}
         shadow-camera-top={320}

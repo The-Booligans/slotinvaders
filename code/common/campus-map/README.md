@@ -98,7 +98,8 @@ Perspective camera at `fov: 36`, framed to the campus extent plus padding, with
 you can't flip under the island.
 
 Three lights: a hemisphere light for sky/ground tint, a strong directional sun
-casting shadows, and a soft rim light from the back in the brand blue. No post
+casting shadows (1024² shadow map — 2048² caused WebGL context loss on Pixel 10's
+PowerVR GPU), and a soft rim light from the back in the brand blue. No post
 processing — the saturation comes from the materials.
 
 ### Files

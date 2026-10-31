@@ -46,18 +46,20 @@ export function NearbyRacks({ spots, at, status, selectedId, onSelect }: NearbyR
 
   return (
     <section aria-label="Nearby racks" className="pointer-events-none">
-      <h2 className="mx-auto mb-2 w-fit rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm backdrop-blur">
+      <h2 className="mx-auto mb-1 w-fit rounded-full bg-white/90 px-3 py-1 text-xs font-semibold uppercase tracking-wide text-slate-700 shadow-sm backdrop-blur">
         Nearby racks
       </h2>
       {spots.length === 0 && (
-        <p className="mx-auto mb-3 w-fit rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow-sm">
+        <p className="mx-auto mb-2 w-fit rounded-full bg-white/90 px-3 py-1 text-xs text-slate-600 shadow-sm">
           {status === "offline" ? "Can’t reach the server, retrying…" : "Waiting for live data…"}
         </p>
       )}
       <ul
         ref={listRef}
         onScroll={handleScroll}
-        className="pointer-events-auto flex snap-x snap-mandatory gap-3 overflow-x-auto px-[12.5%] pb-3 [scrollbar-width:none]"
+        // half the viewport minus half a card, so the first/last card can reach the centre
+        // pt-1 keeps the selected card's ring from being clipped: overflow-x forces overflow-y to clip too
+        className="pointer-events-auto flex snap-x snap-mandatory gap-3 overflow-x-auto px-[max(12.5%,calc(50%_-_10rem))] pt-1 pb-3 [scrollbar-width:none]"
       >
         {spots.map((spot) => (
           <li key={spot.id} data-id={spot.id} className="w-3/4 max-w-xs shrink-0 snap-center">
@@ -113,9 +115,7 @@ function RackCard({
       <div className="flex items-start justify-between gap-2">
         <div className="min-w-0">
           <h3 className="truncate font-semibold text-slate-900">{spot.name}</h3>
-          <p className="truncate text-xs text-slate-500">
-            {spot.standLabel} · {spot.capacity} slots
-          </p>
+          <p className="truncate text-xs text-slate-500">{spot.capacity} slots</p>
         </div>
         <span
           className="grid size-9 shrink-0 place-items-center rounded-full text-white"

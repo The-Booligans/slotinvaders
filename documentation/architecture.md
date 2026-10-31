@@ -120,11 +120,13 @@ flowchart LR
 
 `code/app` is a single screen with a header (brand, total free slots, data status), the 3D campus map, and a bottom bar with **Map** and **Profile** tabs.
 
-- The map shows one pin per stand, coloured by occupancy (green < 60 %, amber < 85 %, orange < 100 %, red full) and labelled with free slots, plus a "you are here" dot.
+- The app works per **area**, not per stand: it adds up all stands of an area (`groupByArea` in `code/app/lib/parking.ts`) into one card and one pin. Capacity, occupied and free are summed per stand (a bike over capacity in one stand doesn't fill another), the area is stale if any stand is, and "updated" is its latest stand report. Stand names are never shown.
+- The map shows one pin per area, coloured by occupancy (green < 60 %, amber < 85 %, orange < 100 %, red full) and labelled with free slots, plus a "you are here" dot.
 - A swipeable **Nearby racks** carousel overlays the bottom of the map, sorted by distance. Swiping a card selects its pin and the camera glides to it; tapping a pin scrolls to its card. A button recenters the whole campus.
 - Occupancy is **live**: the app calls `POST /v1/negotiate` and opens a WebSocket (`code/app/lib/live-stands.ts`), which receives every stand's status on connect and then every 10 s. It reconnects with backoff (1 s … 30 s) and keeps showing the last data meanwhile; the header shows Live / Connecting… / Offline.
-- Each card shows the area, stand, slots, % busy and bike count, free slots, walking distance and freshness ("Updated 2 min ago", "Some sensors offline", "No sensor data yet"). A stand that never reported gets a grey "?" pin and is left out of the header's free total.
-- Stand positions on the map are an **approximate** hand-made table (`code/app/lib/stand-positions.ts`) until `stands.yaml` has real locations. The user's position is still a **mock** until device location is wired in.
+- Each card shows the area, slots, % busy and bike count, free slots, walking distance and freshness ("Updated 2 min ago", "Some sensors offline", "No sensor data yet"). An area where no stand has reported gets a grey "?" pin and is left out of the header's free total.
+- Area positions on the map are an **approximate** hand-made table keyed by area id (`code/app/lib/area-positions.ts`) until `stands.yaml` has real locations. The user's position is still a **mock** until device location is wired in.
+- The Android app bundles the static export (`out/`) into the APK. After any web change, run `pnpm build` and `pnpm exec cap sync android` before building the APK, or the phone keeps running the old web code.
 - Profile is a placeholder: nobody logs in.
 
 ## What happens when a bike is parked
