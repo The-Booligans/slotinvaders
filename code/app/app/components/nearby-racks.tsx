@@ -148,9 +148,9 @@ function RackCard({
         <span className="font-medium tabular-nums text-slate-900">
           {!reported ? `${spot.capacity} slots` : spot.free === 0 ? "No free slots" : `${spot.free} free`}
         </span>
-        {spot.distanceM === null ? (
+        {spot.position === null ? (
           <span>Not on the map yet</span>
-        ) : (
+        ) : spot.distanceM === null ? null : (
           <span className="flex items-center gap-1">
             <WalkIcon className="size-3.5" />
             {formatDistance(spot.distanceM)} · {walkingMinutes(spot.distanceM)} min

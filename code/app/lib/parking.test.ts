@@ -51,6 +51,13 @@ describe("toParkingSpots", () => {
     expect(spots[2].position).toBeNull();
   });
 
+  it("has no distances and sorts by name without a user position", () => {
+    const spots = toParkingSpots([status("far"), status("lost"), status("near")], null, positions);
+    expect(spots.map((s) => s.id)).toEqual(["far", "lost", "near"]);
+    expect(spots.map((s) => s.distanceM)).toEqual([null, null, null]);
+    expect(spots[0].position).toEqual([300, 400]);
+  });
+
   it("places every area the backend currently has", () => {
     const ids = ["flow-garage-north", "flow-garage-south", "flow-main", "flow-se", "flow-sw", "sternenhof"];
     expect(Object.keys(AREA_POSITIONS).sort()).toEqual(ids);
