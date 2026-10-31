@@ -1,0 +1,22 @@
+# Copy this file to device-keys.secret.yaml and fill in real values.
+# device-keys.secret.yaml is git-ignored.
+#
+# Each key is a 256-bit random value, base64url-encoded. Generate with:
+#   node -e 'console.log(require("crypto").randomBytes(32).toString("base64url"))'
+# Then update the matching keyHash in stands.yaml with:
+#   node -e 'console.log("sha256:" + require("crypto").createHash("sha256").update(process.argv[1]).digest("hex"))' <key>
+
+version: 1
+
+keys:
+  thor:   "replace-me"
+  probe:  "replace-me"
+  drone:  "replace-me"
+  mule:   "replace-me"
+  ling:   "replace-me"
+  roach:  "replace-me"
+  hydra:  "replace-me"
+  ghost:  "replace-me"
+  raven:  "replace-me"
+  medic:  "replace-me"
+  reaper: "replace-me"
