@@ -35,63 +35,128 @@ site:
   timezone: Europe/Zurich
 
 areas:
-  - id: kaegen-hof
-    name: Kägenstrasse 2 – Hof
-    kind: open # open rack · ~72 × 42 m
-  - id: flow-west
-    name: Flowtec – West
-    kind: open # open rack · ~55 × 64 m
-  - id: cmr-ost
-    name: Christoph Merian-Ring – Ost
-    kind: open # open rack · ~35 × 24 m
-  - id: cmr-sued
-    name: Christoph Merian-Ring – Süd
-    kind: open # open rack · ~37 × 27 m
-  - id: velo-ds
-    name: Veloparking Digital Solutions
-    kind: covered # covered garage · ~78 × 46 m
-  - id: velo-flow
-    name: Veloparking Flowtec
-    kind: covered # covered garage · ~36 × 41 m
+  - id: flow-main
+    name: Flow Main
+    kind: covered
+  - id: sternenhof
+    name: Sternenhof
+    kind: covered
+  - id: flow-garage-south
+    name: Flow Garage South
+    kind: inside
+  - id: flow-sw
+    name: Flow South West
+    kind: covered
+  - id: flow-se
+    name: Flow South East
+    kind: covered
+  - id: flow-garage-north
+    name: Flow Garage North
+    kind: covered
 
+# One stand per area to start.
 stands:
-  - id: kaegen-hof-1
-    area: kaegen-hof
-    name: Kägenstrasse 2 – Hof, Stand 1
+  - id: flow-main-1
+    area: flow-main
+    name: Flow Main, Stand 1
     slots: 40
     # location: { lat: 0.0, lon: 0.0 }   # TODO: GPS position of the stand
-  - id: flow-west-1
-    area: flow-west
-    name: Flowtec – West, Stand 1
-    slots: 60
+  - id: sternenhof-1
+    area: sternenhof
+    name: Sternenhof, Stand 1
+    slots: 30
     # location: { lat: 0.0, lon: 0.0 }   # TODO
-  - id: cmr-ost-1
-    area: cmr-ost
-    name: Christoph Merian-Ring – Ost, Stand 1
+  - id: flow-garage-south-1
+    area: flow-garage-south
+    name: Flow Garage South, Stand 1
+    slots: 30
+    # location: { lat: 0.0, lon: 0.0 }   # TODO
+  - id: flow-sw-1
+    area: flow-sw
+    name: Flow South West, Stand 1
     slots: 20
     # location: { lat: 0.0, lon: 0.0 }   # TODO
-  - id: cmr-sued-1
-    area: cmr-sued
-    name: Christoph Merian-Ring – Süd, Stand 1
-    slots: 25
+  - id: flow-se-1
+    area: flow-se
+    name: Flow South East, Stand 1
+    slots: 20
     # location: { lat: 0.0, lon: 0.0 }   # TODO
-  - id: velo-ds-1
-    area: velo-ds
-    name: Veloparking Digital Solutions, Stand 1
-    slots: 80
-    # location: { lat: 0.0, lon: 0.0 }   # TODO
-  - id: velo-flow-1
-    area: velo-flow
-    name: Veloparking Flowtec, Stand 1
-    slots: 45
+  - id: flow-garage-north-1
+    area: flow-garage-north
+    name: Flow Garage North, Stand 1
+    slots: 20
     # location: { lat: 0.0, lon: 0.0 }   # TODO
 
 devices:
-  # Kägenstrasse Hof — LiDAR sweeps the far row, ToF covers the near one.
+  # Flow Main — biggest covered rack; two cameras (one cloud fallback, one on-device YOLO).
+  - id: drone
+    name: Flow Main – camera (cloud fallback)
+    stand: flow-main-1
+    hardware: yolo
+    mode: cloud
+    status: active
+    keyHash: "sha256:e7eba53c1cd0243c57de1c802351165d484cdd3c55979b39bc2849e7e7640241"
+  - id: mule
+    name: Flow Main – on-device YOLO
+    stand: flow-main-1
+    hardware: yolo
+    mode: device
+    status: active
+    keyHash: "sha256:1a13f32ec1c43f636419c800029c277870c4ecc2d96041f04892daae9415a357"
+
+  # Sternenhof — covered rack, LiDAR + camera.
+  - id: ghost
+    name: Sternenhof – LiDAR sweep
+    stand: sternenhof-1
+    hardware: lidar
+    mode: device
+    status: active
+    keyHash: "sha256:c581feb715209c0212de3e5afc29761e64b181342934d1c9c9ab4115f4b29caa"
+  - id: raven
+    name: Sternenhof – camera
+    stand: sternenhof-1
+    hardware: yolo
+    mode: device
+    status: active
+    keyHash: "sha256:0a40991a2ddd358f477ee5397b48badb1d03a9139f5fc99eb42bbdfad01ec4e1"
+
+  # Flow Garage South — inside garage, LiDAR + camera.
+  - id: medic
+    name: Flow Garage South – LiDAR sweep
+    stand: flow-garage-south-1
+    hardware: lidar
+    mode: device
+    status: active
+    keyHash: "sha256:51b06d29ad63cdf9748700666d8ae1eff88241f377922fc4a6b24c0290fdc571"
+  - id: reaper
+    name: Flow Garage South – camera
+    stand: flow-garage-south-1
+    hardware: yolo
+    mode: device
+    status: active
+    keyHash: "sha256:f1e74e93eac6c960ce936b672e1a642a41e7c02f0221d9d426aaa0ca1bdbbf89"
+
+  # Flow South West — LiDAR + camera cross-check.
+  - id: roach
+    name: Flow South West – LiDAR
+    stand: flow-sw-1
+    hardware: lidar
+    mode: device
+    status: active
+    keyHash: "sha256:df2093a5a22eb77ae787fa2920e6e986a3f5997ca7478ed5bc4a096d1efc4cb3"
+  - id: hydra
+    name: Flow South West – camera cross-check
+    stand: flow-sw-1
+    hardware: yolo
+    mode: device
+    status: active
+    keyHash: "sha256:b8d713c3d4ac74d27b5cbe217b14c76120400f9e1774a4d0a6a5fdecfc84efd0"
+
+  # Flow South East — LiDAR sweeps the far row, camera covers the near one.
   - id: thor
-    name: Kägenstrasse Hof – LiDAR, far row
-    stand: kaegen-hof-1
-    hardware: rplidar-c1
+    name: Flow South East – LiDAR, far row
+    stand: flow-se-1
+    hardware: lidar
     mode: device
     status: active
     keyHash: "sha256:2402a58aea192bb6ae85d91417bb5730c773d232ba3a445a21ef08c72606b845"
@@ -106,85 +171,21 @@ devices:
       calibrationMs: 8000         # how long the direction-learning window lasts
       reportIntervalMs: 10000     # how often to POST /v1/readings
   - id: probe
-    name: Kägenstrasse Hof – ToF, near row
-    stand: kaegen-hof-1
-    hardware: vl53l5cx-array
+    name: Flow South East – camera, near row
+    stand: flow-se-1
+    hardware: yolo
     mode: device
     status: active
     keyHash: "sha256:d1421a31bfee87096d7e5d3ec495d331e6ef401793b2b42023fca81ca5ec6869"
 
-  # Flowtec West — biggest open rack; one ESP32-CAM on cloud as plan-B fallback.
-  - id: drone
-    name: Flowtec West – camera (cloud fallback)
-    stand: flow-west-1
-    hardware: esp32-s3-cam
-    mode: cloud
-    status: active
-    keyHash: "sha256:e7eba53c1cd0243c57de1c802351165d484cdd3c55979b39bc2849e7e7640241"
-  - id: mule
-    name: Flowtec West – on-device YOLO
-    stand: flow-west-1
-    hardware: atoms3r-cam-m12-yolo # on-device YOLO bike detector; firmware in code/firmware/mule
-    mode: device
-    status: active
-    keyHash: "sha256:1a13f32ec1c43f636419c800029c277870c4ecc2d96041f04892daae9415a357"
-
-  # Christoph Merian-Ring Ost — small open rack, one mmWave head.
+  # Flow Garage North — covered rack, one LiDAR head.
   - id: ling
-    name: CMR Ost – mmWave
-    stand: cmr-ost-1
-    hardware: mr24hpc1-mmwave
+    name: Flow Garage North – LiDAR
+    stand: flow-garage-north-1
+    hardware: lidar
     mode: device
     status: active
     keyHash: "sha256:e09f6a2aade818a2e1a3f535a0346d3e6b9754ada1a2a08d5cc80957949d7fbb"
-
-  # Christoph Merian-Ring Süd — mmWave + ToF cross-check.
-  - id: roach
-    name: CMR Süd – mmWave
-    stand: cmr-sued-1
-    hardware: mr24hpc1-mmwave
-    mode: device
-    status: active
-    keyHash: "sha256:df2093a5a22eb77ae787fa2920e6e986a3f5997ca7478ed5bc4a096d1efc4cb3"
-  - id: hydra
-    name: CMR Süd – ToF cross-check
-    stand: cmr-sued-1
-    hardware: vl53l5cx-array
-    mode: device
-    status: active
-    keyHash: "sha256:b8d713c3d4ac74d27b5cbe217b14c76120400f9e1774a4d0a6a5fdecfc84efd0"
-
-  # Veloparking Digital Solutions — covered garage, one LiDAR sweep + ToF.
-  - id: ghost
-    name: Veloparking DS – LiDAR sweep
-    stand: velo-ds-1
-    hardware: rplidar-c1
-    mode: device
-    status: active
-    keyHash: "sha256:c581feb715209c0212de3e5afc29761e64b181342934d1c9c9ab4115f4b29caa"
-  - id: raven
-    name: Veloparking DS – ToF
-    stand: velo-ds-1
-    hardware: vl53l5cx-array
-    mode: device
-    status: active
-    keyHash: "sha256:0a40991a2ddd358f477ee5397b48badb1d03a9139f5fc99eb42bbdfad01ec4e1"
-
-  # Veloparking Flowtec — covered garage, same recipe as Digital Solutions.
-  - id: medic
-    name: Veloparking Flowtec – LiDAR sweep
-    stand: velo-flow-1
-    hardware: rplidar-c1
-    mode: device
-    status: active
-    keyHash: "sha256:51b06d29ad63cdf9748700666d8ae1eff88241f377922fc4a6b24c0290fdc571"
-  - id: reaper
-    name: Veloparking Flowtec – ToF
-    stand: velo-flow-1
-    hardware: vl53l5cx-array
-    mode: device
-    status: active
-    keyHash: "sha256:f1e74e93eac6c960ce936b672e1a642a41e7c02f0221d9d426aaa0ca1bdbbf89"
 
 # Device history, only needed once a device is replaced. Example: raven breaks
 # and a new ToF array "viking" takes over on 2027-03-14:
@@ -193,8 +194,8 @@ devices:
 #     - id: raven  … status: retired   (and remove its `stand:` line)
 #     - id: viking … status: active    (no `stand:` line, the assignment below covers it)
 #   assignments:
-#     - { device: raven,  stand: velo-ds-1, from: 2026-10-31, to: 2027-03-14 }
-#     - { device: viking, stand: velo-ds-1, from: 2027-03-14 }
+#     - { device: raven,  stand: sternenhof-1, from: 2026-10-31, to: 2027-03-14 }
+#     - { device: viking, stand: sternenhof-1, from: 2027-03-14 }
 
 recognition: # only used by cloud-mode (fallback) devices
   model: azure-ai-vision

@@ -48,7 +48,7 @@ describe("toParkingSpots", () => {
   });
 
   it("places every stand the backend currently has", () => {
-    const ids = ["cmr-ost-1", "cmr-sued-1", "flow-west-1", "kaegen-hof-1", "velo-ds-1", "velo-flow-1"];
+    const ids = ["flow-garage-north-1", "flow-garage-south-1", "flow-main-1", "flow-se-1", "flow-sw-1", "sternenhof-1"];
     expect(Object.keys(STAND_POSITIONS).sort()).toEqual(ids);
   });
 });

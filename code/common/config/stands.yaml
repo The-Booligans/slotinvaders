@@ -18,50 +18,75 @@ site:
   timezone: Europe/Zurich
 
 areas:
-  - id: kaegen-hof
-    name: Kägenstrasse 2 – Hof
-    kind: open # open rack · ~72 × 42 m
-  - id: flow-west
-    name: Flowtec – West
-    kind: open # open rack · ~55 × 64 m
-  - id: cmr-ost
-    name: Christoph Merian-Ring – Ost
-    kind: open # open rack · ~35 × 24 m
-  - id: cmr-sued
-    name: Christoph Merian-Ring – Süd
-    kind: open # open rack · ~37 × 27 m
-  - id: velo-ds
-    name: Veloparking Digital Solutions
-    kind: covered # covered garage · ~78 × 46 m
-  - id: velo-flow
-    name: Veloparking Flowtec
-    kind: covered # covered garage · ~36 × 41 m
+  - { id: flow-main, name: Flow Main, kind: covered }
+  - { id: sternenhof, name: Sternenhof, kind: covered }
+  - { id: flow-garage-south, name: Flow Garage South, kind: inside }
+  - { id: flow-sw, name: Flow South West, kind: covered }
+  - { id: flow-se, name: Flow South East, kind: covered }
+  - { id: flow-garage-north, name: Flow Garage North, kind: covered }
 
+# One stand per area to start.
 stands:
-  - id: kaegen-hof-1
-    area: kaegen-hof
-    slots: 40
-  - id: flow-west-1
-    area: flow-west
-    slots: 60
-  - id: cmr-ost-1
-    area: cmr-ost
-    slots: 20
-  - id: cmr-sued-1
-    area: cmr-sued
-    slots: 25
-  - id: velo-ds-1
-    area: velo-ds
-    slots: 80
-  - id: velo-flow-1
-    area: velo-flow
-    slots: 45
+  - { id: flow-main-1, area: flow-main, slots: 40 }
+  - { id: sternenhof-1, area: sternenhof, slots: 30 }
+  - { id: flow-garage-south-1, area: flow-garage-south, slots: 30 }
+  - { id: flow-sw-1, area: flow-sw, slots: 20 }
+  - { id: flow-se-1, area: flow-se, slots: 20 }
+  - { id: flow-garage-north-1, area: flow-garage-north, slots: 20 }
 
 devices:
-  # Kägenstrasse Hof — LiDAR sweeps the far row, ToF covers the near one.
+  # Flow Main — biggest covered rack; two cameras (one cloud fallback, one on-device YOLO).
+  - id: drone
+    stand: flow-main-1
+    hardware: yolo
+    mode: cloud
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+  - id: mule
+    stand: flow-main-1
+    hardware: yolo
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000004"
+
+  # Sternenhof — covered rack, LiDAR + camera.
+  - id: ghost
+    stand: sternenhof-1
+    hardware: lidar
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000008"
+  - id: raven
+    stand: sternenhof-1
+    hardware: yolo
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000009"
+
+  # Flow Garage South — inside garage, LiDAR + camera.
+  - id: medic
+    stand: flow-garage-south-1
+    hardware: lidar
+    mode: device
+    keyHash: "sha256:000000000000000000000000000000000000000000000000000000000000000a"
+  - id: reaper
+    stand: flow-garage-south-1
+    hardware: yolo
+    mode: device
+    keyHash: "sha256:000000000000000000000000000000000000000000000000000000000000000b"
+
+  # Flow South West — LiDAR + camera cross-check.
+  - id: roach
+    stand: flow-sw-1
+    hardware: lidar
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000006"
+  - id: hydra
+    stand: flow-sw-1
+    hardware: yolo
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000007"
+
+  # Flow South East — LiDAR sweeps the far row, camera covers the near one.
   - id: thor
-    stand: kaegen-hof-1
-    hardware: rplidar-c1
+    stand: flow-se-1
+    hardware: lidar
     mode: device
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
     config:                       # thor fetches these at boot from /v1/device/config
@@ -75,65 +100,17 @@ devices:
       calibrationMs: 8000         # how long the direction-learning window lasts
       reportIntervalMs: 10000     # how often to POST /v1/readings
   - id: probe
-    stand: kaegen-hof-1
-    hardware: vl53l5cx-array
+    stand: flow-se-1
+    hardware: yolo
     mode: device
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000002"
 
-  # Flowtec West — biggest open rack; one ESP32-CAM on cloud as plan-B fallback.
-  - id: drone
-    stand: flow-west-1
-    hardware: esp32-s3-cam
-    mode: cloud
-    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000003"
-  - id: mule
-    stand: flow-west-1
-    hardware: atoms3r-cam-m12-yolo # on-device YOLO bike detector; firmware in code/firmware/mule
-    mode: device
-    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000004"
-
-  # Christoph Merian-Ring Ost — small open rack, one mmWave head.
+  # Flow Garage North — covered rack, one LiDAR head.
   - id: ling
-    stand: cmr-ost-1
-    hardware: mr24hpc1-mmwave
+    stand: flow-garage-north-1
+    hardware: lidar
     mode: device
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000005"
-
-  # Christoph Merian-Ring Süd — mmWave + ToF cross-check.
-  - id: roach
-    stand: cmr-sued-1
-    hardware: mr24hpc1-mmwave
-    mode: device
-    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000006"
-  - id: hydra
-    stand: cmr-sued-1
-    hardware: vl53l5cx-array
-    mode: device
-    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000007"
-
-  # Veloparking Digital Solutions — covered garage, one LiDAR sweep + ToF.
-  - id: ghost
-    stand: velo-ds-1
-    hardware: rplidar-c1
-    mode: device
-    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000008"
-  - id: raven
-    stand: velo-ds-1
-    hardware: vl53l5cx-array
-    mode: device
-    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000009"
-
-  # Veloparking Flowtec — covered garage, same recipe as Digital Solutions.
-  - id: medic
-    stand: velo-flow-1
-    hardware: rplidar-c1
-    mode: device
-    keyHash: "sha256:000000000000000000000000000000000000000000000000000000000000000a"
-  - id: reaper
-    stand: velo-flow-1
-    hardware: vl53l5cx-array
-    mode: device
-    keyHash: "sha256:000000000000000000000000000000000000000000000000000000000000000b"
 
 recognition: # only used by cloud-mode (fallback) devices
   model: azure-ai-vision
