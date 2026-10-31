@@ -31,9 +31,10 @@ describe("Landing page", () => {
     expect(screen.getByText("Full")).toBeDefined();
   });
 
-  it("shows the Map tab as coming soon", () => {
+  it("renders the List and Map tabs", () => {
     render(<Page />);
-    expect(screen.getByText(/coming soon/i)).toBeDefined();
+    expect(screen.getByRole("tab", { name: "List" })).toBeDefined();
+    expect(screen.getByRole("tab", { name: "Map" })).toBeDefined();
   });
 
   it("renders the three feature cards", () => {
@@ -48,12 +49,8 @@ describe("Landing page", () => {
     expect(
       screen.getByRole("heading", { level: 2, name: /esp32, solar-powered, lorawan/i }),
     ).toBeDefined();
-    expect(
-      screen.getByRole("heading", { level: 2, name: /six sensors/i }),
-    ).toBeDefined();
-    expect(
-      screen.getByRole("heading", { level: 2, name: /no faces, no plates/i }),
-    ).toBeDefined();
+    expect(screen.getByRole("heading", { level: 2, name: /six sensors/i })).toBeDefined();
+    expect(screen.getByRole("heading", { level: 2, name: /no faces, no plates/i })).toBeDefined();
     expect(screen.getByRole("heading", { level: 2, name: /the booligans/i })).toBeDefined();
   });
 
