@@ -164,7 +164,7 @@ test("bad bodies are refused", async () => {
   assert.equal((await t.send(KEYS.thor, { occupied: 3 })).status, 422);
 });
 
-test("duplicates are ignored, fast repeats are throttled, a restart is accepted", async () => {
+test("duplicates are ignored, repeats within 2 s are throttled, a restart is accepted", async () => {
   const t = setup();
   await t.send(KEYS.thor, { occupied: 9, seq: 10 });
   t.advance(30);
@@ -174,15 +174,17 @@ test("duplicates are ignored, fast repeats are throttled, a restart is accepted"
 
   t.advance(1);
   await t.send(KEYS.thor, { occupied: 8, seq: 11 });
-  t.advance(2);
+  t.advance(1); // within the 2 s rate limit
   const fast = await t.send(KEYS.thor, { occupied: 7, seq: 12 });
   assert.equal(fast.status, 429);
+  t.advance(2); // 3 s after the last accepted reading: allowed again
+  assert.equal((await t.send(KEYS.thor, { occupied: 7, seq: 12 })).status, 202);
 
   t.advance(600); // device was off for 10 minutes and restarted with seq 0
   const restart = await t.send(KEYS.thor, { occupied: 4, seq: 0 });
   assert.equal(restart.status, 202);
   assert.equal(t.state.docs.get("kaegen-hof").devices.thor.seq, 0);
-  assert.equal(t.readings.docs.size, 3);
+  assert.equal(t.readings.docs.size, 4);
 });
 
 test("a parallel write to the same area is retried, not lost", async () => {
