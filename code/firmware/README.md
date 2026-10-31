@@ -39,7 +39,7 @@ cp secrets.example.h secrets.h
 
 ### Generating a device key
 
-Device keys live in [`code/backend/device-keys.secret.yaml`](../backend/device-keys.sample.yaml) (git-ignored). Only the SHA-256 digest ever reaches the repo, stored under `devices[].keyHash` in [`code/common/config/stands.yaml`](../common/config/stands.yaml). To mint a new key for device `mule`:
+Device keys live in [`code/backend/device-keys.secret.yaml`](../backend/device-keys.sample.yaml) (git-ignored). Only the SHA-256 digest ever reaches the repo, stored under `devices[].keyHash` in [`code/backend/velo-stands-cosmos/stands.yaml`](../backend/velo-stands-cosmos/stands.yaml). To mint a new key for device `mule`:
 
 ```sh
 # One random 256-bit key, base64url

@@ -1,6 +1,6 @@
 # Velo Stands – areas, stands, devices and which device watches which stand.
 #
-# Same layout as config/stands.yaml in the architecture, plus:
+# Same layout as the architecture.md example, plus:
 #   stands[]      name, location, locationNote, retiredAt
 #   devices[]     name, serial, status
 #   assignments[] device -> stand, from / to  (replaces devices[].stand,
