@@ -1,0 +1,135 @@
+# Slot Invaders — single source of truth for areas, stands and devices.
+#
+# Shape and rules: see documentation/architecture.md ("Config file").
+# Sensor choices per stand come from documentation/sensor-evaluation.md.
+#
+# All slot counts are placeholders until Endress+Hauser confirms real
+# capacities. All keyHash values are PLACEHOLDERS — real keys are flashed to
+# the devices and only sha256 digests ever live in the repo.
+#
+# Device IDs are StarCraft units. Short, memorable, pronounceable over Slack
+# when something misbehaves ("the raven is stale again").
+
+version: 1
+
+site:
+  id: reinach
+  name: Endress+Hauser Reinach
+  timezone: Europe/Zurich
+
+areas:
+  - id: kaegen-hof
+    name: Kägenstrasse 2 – Hof
+    kind: open # open rack · ~72 × 42 m
+  - id: flow-west
+    name: Flowtec – West
+    kind: open # open rack · ~55 × 64 m
+  - id: cmr-ost
+    name: Christoph Merian-Ring – Ost
+    kind: open # open rack · ~35 × 24 m
+  - id: cmr-sued
+    name: Christoph Merian-Ring – Süd
+    kind: open # open rack · ~37 × 27 m
+  - id: velo-ds
+    name: Veloparking Digital Solutions
+    kind: covered # covered garage · ~78 × 46 m
+  - id: velo-flow
+    name: Veloparking Flowtec
+    kind: covered # covered garage · ~36 × 41 m
+
+stands:
+  - id: kaegen-hof-1
+    area: kaegen-hof
+    slots: 40
+  - id: flow-west-1
+    area: flow-west
+    slots: 60
+  - id: cmr-ost-1
+    area: cmr-ost
+    slots: 20
+  - id: cmr-sued-1
+    area: cmr-sued
+    slots: 25
+  - id: velo-ds-1
+    area: velo-ds
+    slots: 80
+  - id: velo-flow-1
+    area: velo-flow
+    slots: 45
+
+devices:
+  # Kägenstrasse Hof — ToF covers the near row, LiDAR sweeps the far one.
+  - id: scv
+    stand: kaegen-hof-1
+    hardware: vl53l5cx-array
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
+  - id: probe
+    stand: kaegen-hof-1
+    hardware: rplidar-c1
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000002"
+
+  # Flowtec West — biggest open rack; one ESP32-CAM on cloud as plan-B fallback.
+  - id: drone
+    stand: flow-west-1
+    hardware: esp32-s3-cam
+    mode: cloud
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000003"
+  - id: mule
+    stand: flow-west-1
+    hardware: vl53l5cx-array
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000004"
+
+  # Christoph Merian-Ring Ost — small open rack, one mmWave head.
+  - id: ling
+    stand: cmr-ost-1
+    hardware: mr24hpc1-mmwave
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000005"
+
+  # Christoph Merian-Ring Süd — mmWave + ToF cross-check.
+  - id: roach
+    stand: cmr-sued-1
+    hardware: mr24hpc1-mmwave
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000006"
+  - id: hydra
+    stand: cmr-sued-1
+    hardware: vl53l5cx-array
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000007"
+
+  # Veloparking Digital Solutions — covered garage, one LiDAR sweep + ToF.
+  - id: ghost
+    stand: velo-ds-1
+    hardware: rplidar-c1
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000008"
+  - id: raven
+    stand: velo-ds-1
+    hardware: vl53l5cx-array
+    mode: device
+    keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000009"
+
+  # Veloparking Flowtec — covered garage, same recipe as Digital Solutions.
+  - id: medic
+    stand: velo-flow-1
+    hardware: rplidar-c1
+    mode: device
+    keyHash: "sha256:000000000000000000000000000000000000000000000000000000000000000a"
+  - id: reaper
+    stand: velo-flow-1
+    hardware: vl53l5cx-array
+    mode: device
+    keyHash: "sha256:000000000000000000000000000000000000000000000000000000000000000b"
+
+recognition: # only used by cloud-mode (fallback) devices
+  model: azure-ai-vision
+  label: bicycle
+  minConfidence: 0.5
+
+settings:
+  staleAfterSeconds: 300
+  readingTtlDays: 30
