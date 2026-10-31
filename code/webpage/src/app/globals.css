@@ -178,7 +178,9 @@ p {
 .hero--map {
   position: relative;
   padding-block: 0;
-  min-height: clamp(520px, 78vh, 820px);
+  /* fill the first viewport; `dvh` so mobile browser chrome is accounted for */
+  min-height: 100vh;
+  min-height: 100dvh;
   overflow: hidden;
   background: #5cc2f2;
 }
