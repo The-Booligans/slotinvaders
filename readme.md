@@ -124,9 +124,8 @@ every rider.
   glides between stands when you tap one.
 - **No account, no install.** The web app at `app.slotinvaders.ch` works
   for anyone with a browser.
-- **Native Android.** Signed APK you can sideload today
-  (`code/webpage/public/Slot_Invaders_v1.2.apk`, also served from the
-  landing page); iOS build is in review.
+- **Native Android and native iOS.** The same Capacitor build wrapped for
+  both platforms.
 - **Remembers your bike.** One tiny iBeacon per stand, all-local matching,
   nothing uploaded.
 - **Privacy by design.** Only the integer count leaves the sensor — no

@@ -903,8 +903,8 @@ export default function Page() {
                     <code>app.slotinvaders.ch</code> works for anyone with a browser.
                   </li>
                   <li>
-                    <strong>Native Android.</strong> Signed APK you can sideload today; iOS build
-                    is in review.
+                    <strong>Native Android and native iOS.</strong> Same Capacitor build wrapped
+                    for both platforms.
                   </li>
                   <li>
                     <strong>Remembers your bike.</strong> One tiny iBeacon per stand, all-local
