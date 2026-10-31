@@ -77,7 +77,7 @@ Status legend: ⬜ not started · 🧪 testing · ✅ passed · ❌ ruled out
 - **Spike:** `code/firmware/experiments/ultrasonic/`
 - **Status:** not started.
 
-### ⬜ On-device CV — ESP32-S3 with ESP-DL / EdgeImpulse
+### 🧪 On-device CV — ESP32-S3 with Edge Impulse YOLO ("mule")
 
 - **Idea:** use the provided ESP32 cameras but **do inference on the board**.
   The image stays in RAM; only the integer count leaves.
@@ -85,8 +85,13 @@ Status legend: ⬜ not started · 🧪 testing · ✅ passed · ❌ ruled out
   uploads" promise, scales to open racks a ToF can't cover.
 - **Expected weaknesses:** ESP32-S3 inference is tight; model accuracy on
   bikes from oblique angles unproven.
-- **Spike:** `code/firmware/experiments/esp32-s3-cv/`
-- **Status:** not started.
+- **Hardware:** AtomS3R-CAM-M12 (OV3660 on ESP32-S3 with 8 MB OPI PSRAM).
+- **Firmware:** [`code/firmware/mule`](../code/firmware/mule) — captures a VGA
+  JPEG, decodes to RGB888, center-crops to the model's input, runs an
+  Edge Impulse YOLOv5-for-CPU detector, and POSTs the count of `bicycle`
+  bounding boxes to `/api/v1/readings`. The model is dropped in as an
+  Edge Impulse Arduino library (see the firmware README).
+- **Status:** firmware prepared, waiting on the first trained model.
 
 ### ⬜ Magnetic / inductive loop per bay
 
