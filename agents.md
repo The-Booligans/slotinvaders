@@ -28,6 +28,12 @@ Shared Copilot sessions let teammates view and follow a Copilot coding agent ses
 - Follow clean-code rules: small functions, clear names, one responsibility per unit.
 - Keep comments short and understandable. Only comment the *why* when it isn't obvious from the code.
 
+## How agents should handle native platforms
+
+- The app in `code/app` is one Capacitor build that ships to both iOS (`code/app/ios`) and Android (`code/app/android`). Every native feature — permissions, plugins, deep links, push, splash, icons, geolocation, camera, background tasks, etc. — must be implemented on **both** platforms in the same PR. A feature that only lands on one platform is not done.
+- Prefer official Capacitor plugins over hand-rolled native code. If a plugin requires platform-specific config (`Info.plist` keys on iOS, `AndroidManifest.xml` entries on Android), update both.
+- After touching web code, run `pnpm build && pnpm exec cap sync` so both the Android and iOS projects pick up the change.
+
 ## How agents should handle documentation
 
 - Always check the `documentation/` directory before starting work, especially `documentation/architecture.md`. The architecture doc is the source of truth for how components fit together — read it so your changes stay consistent with it.
