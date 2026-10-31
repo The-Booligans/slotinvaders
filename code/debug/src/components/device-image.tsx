@@ -1,10 +1,17 @@
 "use client";
 
-import { Camera } from "lucide-react";
+import { Camera, Download } from "lucide-react";
 import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
 import { Badge } from "@/components/ui/badge";
 import { relativeTime } from "@/lib/utils";
 import type { DebugDeviceSummary } from "@/lib/schemas";
+
+function extensionFor(mimeType: string): string {
+  const subtype = mimeType.split("/")[1]?.toLowerCase();
+  if (!subtype) return "bin";
+  if (subtype === "jpeg") return "jpg";
+  return subtype;
+}
 
 export function DeviceImage({ summary }: { summary: DebugDeviceSummary }) {
   const { device, lastImage, stale } = summary;
@@ -26,12 +33,24 @@ export function DeviceImage({ summary }: { summary: DebugDeviceSummary }) {
       <CardContent className="pt-0">
         <div className="relative aspect-video w-full overflow-hidden rounded-md border bg-black">
           {lastImage ? (
-            // eslint-disable-next-line @next/next/no-img-element
-            <img
-              src={lastImage.url}
-              alt={`Last frame from ${device.id}`}
-              className="h-full w-full object-contain"
-            />
+            <>
+              {/* eslint-disable-next-line @next/next/no-img-element */}
+              <img
+                src={lastImage.url}
+                alt={`Last frame from ${device.id}`}
+                className="h-full w-full object-contain"
+              />
+              <a
+                href={lastImage.url}
+                download={`${device.id}-${lastImage.seq}.${extensionFor(lastImage.mimeType)}`}
+                target="_blank"
+                rel="noreferrer"
+                aria-label={`Download frame #${lastImage.seq} from ${device.id}`}
+                className="absolute right-2 top-2 inline-flex h-8 w-8 items-center justify-center rounded-md bg-black/60 text-white backdrop-blur-sm hover:bg-black/80 focus:outline-none focus:ring-2 focus:ring-white/50"
+              >
+                <Download className="h-4 w-4" />
+              </a>
+            </>
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[var(--color-muted-foreground)]">
               <Camera className="h-6 w-6" />
