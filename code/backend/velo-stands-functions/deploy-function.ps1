@@ -204,6 +204,19 @@ if (-not $appNameOut) {
 
 # --- Code ----------------------------------------------------------------------
 if (-not $SkipCode) {
+    # Pre-flight: fail fast if the local checkout is obviously broken, before we
+    # overwrite the live site with an empty package.
+    foreach ($required in 'host.json', 'package.json') {
+        if (-not (Test-Path -LiteralPath (Join-Path $PSScriptRoot $required))) {
+            throw "Expected $required is missing from $PSScriptRoot. Check your checkout before deploying."
+        }
+    }
+    $sourceFunctions = @(Get-ChildItem -LiteralPath (Join-Path $PSScriptRoot 'src/functions') -Filter *.js -File -ErrorAction SilentlyContinue)
+    if ($sourceFunctions.Count -eq 0) {
+        throw "No functions found under src/functions. The resulting package would deploy an empty Function App."
+    }
+    Write-Host ("Functions to deploy ({0}): {1}" -f $sourceFunctions.Count, (($sourceFunctions | ForEach-Object { $_.BaseName }) -join ', '))
+
     Write-Step 'Packaging the code'
     $staging = Join-Path ([IO.Path]::GetTempPath()) "velostands-function-$PID"
     $zip = "$staging.zip"
@@ -225,10 +238,31 @@ if (-not $SkipCode) {
             Pop-Location
         }
 
+        # Without the Azure Functions SDK the host loads zero routes and every
+        # request returns 404. Catching this here beats finding out from a 404
+        # in production.
+        $requiredDeps = @('@azure/functions', '@azure/cosmos', '@azure/identity')
+        foreach ($dep in $requiredDeps) {
+            $depPackage = Join-Path $staging "node_modules/$dep/package.json"
+            if (-not (Test-Path -LiteralPath $depPackage)) {
+                throw "Required dependency '$dep' is missing from the staged package. The deploy would brick the Function App."
+            }
+        }
+        $stagedFunctions = @(Get-ChildItem -LiteralPath (Join-Path $staging 'src/functions') -Filter *.js -File)
+        if ($stagedFunctions.Count -ne $sourceFunctions.Count) {
+            throw "Staged function count ($($stagedFunctions.Count)) does not match the source ($($sourceFunctions.Count))."
+        }
+
         Add-Type -AssemblyName System.IO.Compression.FileSystem
         [IO.Compression.ZipFile]::CreateFromDirectory($staging, $zip)
-        $sizeMb = [math]::Round((Get-Item -LiteralPath $zip).Length / 1MB, 1)
+        $sizeBytes = (Get-Item -LiteralPath $zip).Length
+        $sizeMb = [math]::Round($sizeBytes / 1MB, 1)
         Write-Host "Package: $sizeMb MB"
+        # A healthy package is well above 1 MB once @azure/* is included. A
+        # tiny zip means npm install produced nothing useful.
+        if ($sizeBytes -lt 1MB) {
+            throw "Package is only $sizeMb MB; expected at least 1 MB. Refusing to deploy an incomplete build."
+        }
 
         Write-Step "Deploying the code to $appNameOut"
         Invoke-Az (@('functionapp', 'deployment', 'source', 'config-zip', '-g', $ResourceGroup, '-n', $appNameOut, '--src', $zip, '-o', 'none') + $sub) | Out-Null
@@ -236,6 +270,31 @@ if (-not $SkipCode) {
     finally {
         Remove-Item -LiteralPath $staging -Recurse -Force -ErrorAction SilentlyContinue
         Remove-Item -LiteralPath $zip -Force -ErrorAction SilentlyContinue
+    }
+
+    # Post-deploy smoke test: a cold start can take up to ~60 s, so poll a known
+    # public route and fail loudly if the host never serves anything but 404.
+    Write-Step 'Smoke test: GET /api/v1/stands'
+    $smokeUrl = "https://$hostName/api/v1/stands"
+    $deadline = (Get-Date).AddSeconds(120)
+    $smokeStatus = 0
+    while ((Get-Date) -lt $deadline) {
+        try {
+            $response = Invoke-WebRequest -Uri $smokeUrl -Method Get -UseBasicParsing -TimeoutSec 10 -ErrorAction Stop
+            $smokeStatus = [int]$response.StatusCode
+        } catch {
+            $smokeStatus = if ($_.Exception.Response) { [int]$_.Exception.Response.StatusCode } else { 0 }
+        }
+        if ($smokeStatus -ne 0 -and $smokeStatus -ne 404) { break }
+        Start-Sleep -Seconds 5
+    }
+    if ($smokeStatus -eq 0) {
+        Write-Warning "Smoke test could not reach $smokeUrl. Check the Function App's Log stream."
+    } elseif ($smokeStatus -eq 404) {
+        Write-Host "Smoke test: HTTP 404 after 120 s — host is up but no routes are registered." -ForegroundColor Red
+        throw "Deploy appears to have left the Function App without functions. Inspect Log stream and Application Insights."
+    } else {
+        Write-Host "Smoke test: HTTP $smokeStatus — routes are serving." -ForegroundColor Green
     }
 }
 
