@@ -231,12 +231,34 @@ export default function Page() {
             </p>
 
             <div className="feature-grid">
-              <div className="feature-card">
-                <div className="feature-card__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                    <circle cx="12" cy="12" r="9" />
-                    <path d="M3 12h18" />
-                    <path d="M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z" />
+              <article className="feature-card">
+                <div className="feature-card__illust" aria-hidden="true">
+                  <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="320" height="180" fill="#e6fafd" />
+                    <rect x="36" y="26" width="248" height="128" rx="8" fill="#ffffff" stroke="#0b0b0b" strokeWidth="1.5" />
+                    <circle cx="48" cy="40" r="3" fill="#f87171" />
+                    <circle cx="60" cy="40" r="3" fill="#fbbf24" />
+                    <circle cx="72" cy="40" r="3" fill="#22c55e" />
+                    <rect x="88" y="35" width="184" height="10" rx="5" fill="#f3f4f6" />
+                    <text x="96" y="43" fontFamily="Barlow, sans-serif" fontSize="7" fill="#525E6B">slotinvaders.ch</text>
+                    <line x1="36" y1="56" x2="284" y2="56" stroke="#e5e7eb" />
+                    <g transform="translate(52,68)">
+                      <circle cx="4" cy="8" r="4.5" fill="#22c55e" />
+                      <text x="16" y="12" fontFamily="Barlow, sans-serif" fontSize="11" fontWeight="600" fill="#0b0b0b">Flow Main</text>
+                      <text x="216" y="12" fontFamily="Barlow, sans-serif" fontSize="11" fontWeight="700" fill="#22c55e" textAnchor="end">38 free</text>
+                      <line x1="0" y1="22" x2="216" y2="22" stroke="#e5e7eb" />
+                    </g>
+                    <g transform="translate(52,96)">
+                      <circle cx="4" cy="8" r="4.5" fill="#f59e0b" />
+                      <text x="16" y="12" fontFamily="Barlow, sans-serif" fontSize="11" fontWeight="600" fill="#0b0b0b">Sternenhof</text>
+                      <text x="216" y="12" fontFamily="Barlow, sans-serif" fontSize="11" fontWeight="700" fill="#f59e0b" textAnchor="end">4 free</text>
+                      <line x1="0" y1="22" x2="216" y2="22" stroke="#e5e7eb" />
+                    </g>
+                    <g transform="translate(52,124)">
+                      <circle cx="4" cy="8" r="4.5" fill="#22c55e" />
+                      <text x="16" y="12" fontFamily="Barlow, sans-serif" fontSize="11" fontWeight="600" fill="#0b0b0b">Flow South West</text>
+                      <text x="216" y="12" fontFamily="Barlow, sans-serif" fontSize="11" fontWeight="700" fill="#22c55e" textAnchor="end">15 free</text>
+                    </g>
                   </svg>
                 </div>
                 <h3>Just the info</h3>
@@ -244,16 +266,43 @@ export default function Page() {
                   Open the page, see every stand&rsquo;s live occupancy. No account, no install,
                   nothing to configure.
                 </p>
-              </div>
+              </article>
 
-              <div className="feature-card">
-                <div className="feature-card__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                    <rect x="7" y="2.5" width="10" height="19" rx="2.4" />
-                    <path d="M11 18.5h2" />
-                    <circle cx="12" cy="7.5" r="1.4" />
-                    <path d="M9.4 7.5a3.6 3.6 0 0 1 5.2 0" />
-                    <path d="M7.6 7.5a6 6 0 0 1 8.8 0" />
+              <article className="feature-card">
+                <div className="feature-card__illust" aria-hidden="true">
+                  <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="320" height="180" fill="#e6fafd" />
+                    {/* iBeacon on the left */}
+                    <g transform="translate(60,90)">
+                      <circle cx="0" cy="0" r="10" fill="#22d3ee" stroke="#0b0b0b" strokeWidth="1.5" />
+                      <circle cx="0" cy="0" r="4" fill="#ffffff" />
+                      <g fill="none" stroke="#22d3ee" strokeWidth="1.5" strokeLinecap="round">
+                        <path d="M18 -14 Q28 -6 28 0 Q28 6 18 14" />
+                        <path d="M26 -22 Q42 -10 42 0 Q42 10 26 22" />
+                        <path d="M34 -30 Q56 -14 56 0 Q56 14 34 30" />
+                      </g>
+                      <text x="0" y="30" fontFamily="Barlow, sans-serif" fontSize="7" fontWeight="600" fill="#525E6B" textAnchor="middle">iBeacon</text>
+                    </g>
+                    {/* Phone */}
+                    <g transform="translate(180,18)">
+                      <rect x="0" y="0" width="110" height="150" rx="14" fill="#ffffff" stroke="#0b0b0b" strokeWidth="1.6" />
+                      <rect x="42" y="4" width="26" height="4" rx="2" fill="#0b0b0b" />
+                      <rect x="8" y="16" width="94" height="124" rx="6" fill="#f0f9ff" />
+                      {/* mini campus shapes */}
+                      <path d="M15 46 L35 36 L60 44 L68 60 L55 78 L24 72 Z" fill="#dcfce7" stroke="#22c55e" strokeWidth="1" />
+                      <path d="M58 92 L82 82 L96 96 L94 122 L72 128 L58 112 Z" fill="#fef3c7" stroke="#f59e0b" strokeWidth="1" />
+                      {/* bike pin */}
+                      <g transform="translate(66,100)">
+                        <path d="M0 0 L-8 -14 Q-8 -24 0 -24 Q8 -24 8 -14 Z" fill="#22d3ee" stroke="#0b0b0b" strokeWidth="1.2" />
+                        <circle cx="0" cy="-16" r="4" fill="#ffffff" stroke="#0b0b0b" strokeWidth="0.8" />
+                        <circle cx="-1.6" cy="-15" r="1" fill="#0b0b0b" />
+                        <circle cx="1.6" cy="-15" r="1" fill="#0b0b0b" />
+                        <line x1="-1.6" y1="-15" x2="1.6" y2="-15" stroke="#0b0b0b" strokeWidth="0.6" />
+                      </g>
+                      {/* you dot */}
+                      <circle cx="30" cy="120" r="6" fill="#22d3ee" opacity="0.3" />
+                      <circle cx="30" cy="120" r="2.5" fill="#22d3ee" stroke="#ffffff" strokeWidth="1" />
+                    </g>
                   </svg>
                 </div>
                 <h3>Remembers your bike</h3>
@@ -262,13 +311,50 @@ export default function Page() {
                   phone, and when you leave campus the app pins down exactly which rack your bike
                   is on — all on-device, no account, nothing uploaded.
                 </p>
-              </div>
+              </article>
 
-              <div className="feature-card">
-                <div className="feature-card__icon" aria-hidden="true">
-                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
-                    <circle cx="12" cy="9" r="3.6" />
-                    <path d="M4.5 20c1.5-3.6 4.4-5.4 7.5-5.4s6 1.8 7.5 5.4" />
+              <article className="feature-card">
+                <div className="feature-card__illust" aria-hidden="true">
+                  <svg viewBox="0 0 320 180" xmlns="http://www.w3.org/2000/svg">
+                    <rect width="320" height="180" fill="#e6fafd" />
+                    {/* Bars chart on the right */}
+                    <g transform="translate(160,142)">
+                      <line x1="-4" y1="0" x2="130" y2="0" stroke="#cbd5e1" strokeWidth="1" />
+                      <rect x="4" y="-28" width="16" height="28" rx="2" fill="#22d3ee" opacity="0.35" />
+                      <rect x="26" y="-42" width="16" height="42" rx="2" fill="#22d3ee" opacity="0.55" />
+                      <rect x="48" y="-58" width="16" height="58" rx="2" fill="#22d3ee" opacity="0.75" />
+                      <rect x="70" y="-72" width="16" height="72" rx="2" fill="#22c55e" />
+                      <rect x="92" y="-88" width="16" height="88" rx="2" fill="#22c55e" />
+                      <text x="64" y="18" fontFamily="Barlow, sans-serif" fontSize="9" fontWeight="700" fill="#0b0b0b" textAnchor="middle">127 km this week</text>
+                    </g>
+                    {/* Medal with the invader */}
+                    <g transform="translate(70,76)">
+                      <path d="M-26 20 L-26 46 L-6 36 L0 52 L6 36 L26 46 L26 20" fill="#22d3ee" stroke="#0b0b0b" strokeWidth="1.5" strokeLinejoin="round" />
+                      <circle cx="0" cy="4" r="34" fill="#fde047" stroke="#0b0b0b" strokeWidth="2" />
+                      <circle cx="0" cy="4" r="27" fill="none" stroke="#0b0b0b" strokeWidth="0.8" />
+                      {/* pixel invader */}
+                      <g transform="translate(-13,-10)" fill="#22c55e">
+                        <rect x="4" y="0" width="3" height="3" />
+                        <rect x="18" y="0" width="3" height="3" />
+                        <rect x="7" y="3" width="3" height="3" />
+                        <rect x="15" y="3" width="3" height="3" />
+                        <rect x="4" y="6" width="17" height="3" />
+                        <rect x="1" y="9" width="5" height="3" />
+                        <rect x="9" y="9" width="7" height="3" />
+                        <rect x="19" y="9" width="5" height="3" />
+                        <rect x="0" y="12" width="25" height="3" />
+                        <rect x="0" y="15" width="3" height="3" />
+                        <rect x="6" y="15" width="13" height="3" />
+                        <rect x="22" y="15" width="3" height="3" />
+                        <rect x="4" y="18" width="3" height="3" />
+                        <rect x="18" y="18" width="3" height="3" />
+                      </g>
+                    </g>
+                    {/* streak chip */}
+                    <g transform="translate(52,154)">
+                      <rect x="-32" y="-10" width="64" height="20" rx="10" fill="#22c55e" />
+                      <text x="0" y="4" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#ffffff" textAnchor="middle">3-day streak</text>
+                    </g>
                   </svg>
                 </div>
                 <h3>Rank up</h3>
@@ -277,7 +363,7 @@ export default function Page() {
                   e-bike. Earn badges for every three days in a row, every ride under −10°C — more
                   to come.
                 </p>
-              </div>
+              </article>
             </div>
           </div>
         </section>
@@ -787,7 +873,87 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="section" id="try">
+        <section className="section" id="roadmap">
+          <div className="container">
+            <span className="eyebrow">Roadmap</span>
+            <h2>What ships today — and what&rsquo;s next</h2>
+            <p className="lead lead--full">
+              The hackathon build already covers the whole live-counts path end to end. The next
+              version turns the single &ldquo;Rank up&rdquo; card into a proper home for every
+              rider.
+            </p>
+
+            <div className="roadmap-grid">
+              <article className="roadmap-col roadmap-col--now">
+                <header className="roadmap-col__head">
+                  <span className="roadmap-col__badge">Shipping now · v1</span>
+                  <h3>Working today</h3>
+                </header>
+                <ul className="roadmap-list">
+                  <li>
+                    <strong>Live stand counts.</strong> Every area on the campus, updated every few
+                    seconds over LoRaWAN + the backend WebSocket.
+                  </li>
+                  <li>
+                    <strong>3D campus map.</strong> One coloured pin per area, free count in a
+                    badge, glides between stands when you tap one.
+                  </li>
+                  <li>
+                    <strong>No account, no install.</strong> The web app at{" "}
+                    <code>app.slotinvaders.ch</code> works for anyone with a browser.
+                  </li>
+                  <li>
+                    <strong>Native Android.</strong> Signed APK you can sideload today; iOS build
+                    is in review.
+                  </li>
+                  <li>
+                    <strong>Remembers your bike.</strong> One tiny iBeacon per stand, all-local
+                    matching, nothing uploaded.
+                  </li>
+                  <li>
+                    <strong>Privacy by design.</strong> Only the integer count leaves the sensor —
+                    no images, no identities, no tracking.
+                  </li>
+                </ul>
+              </article>
+
+              <article className="roadmap-col roadmap-col--next">
+                <header className="roadmap-col__head">
+                  <span className="roadmap-col__badge">Next version</span>
+                  <h3>Coming next</h3>
+                </header>
+                <ul className="roadmap-list">
+                  <li>
+                    <strong>Personalisation.</strong> Save your home stand, hide the ones you never
+                    use, pin your favourites to the top of the list.
+                  </li>
+                  <li>
+                    <strong>Pick your preferred spot.</strong> Mark a specific bay you aim for,
+                    and the map tells you whether it&rsquo;s free before you set off.
+                  </li>
+                  <li>
+                    <strong>Gamification.</strong> Deeper streaks, team challenges, friendly
+                    leaderboards for the Reinach campus, seasonal badges.
+                  </li>
+                  <li>
+                    <strong>Analytics.</strong> Your weekly km, days-by-bike history, best times
+                    of day to find a slot — and a team view for departments that want it.
+                  </li>
+                  <li>
+                    <strong>Store listings live.</strong> App Store and Play Store builds out of
+                    review and installable in two taps.
+                  </li>
+                  <li>
+                    <strong>More sensors, more stands.</strong> The architecture is already
+                    multi-site; adding a new stand is one YAML entry and a sync.
+                  </li>
+                </ul>
+              </article>
+            </div>
+          </div>
+        </section>
+
+        <section className="section section--alt" id="try">
           <div className="container">
             <span className="eyebrow">Hands on</span>
             <h2>Try it out yourself</h2>
@@ -840,7 +1006,7 @@ export default function Page() {
           </div>
         </section>
 
-        <section className="section section--alt" id="team">
+        <section className="section" id="team">
           <div className="container">
             <span className="eyebrow">The team</span>
             <h2>The Booligans</h2>

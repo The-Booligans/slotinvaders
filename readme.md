@@ -110,6 +110,43 @@ every 10 s, so every open client is at most about 10 s behind.
 See [`documentation/architecture.md`](documentation/architecture.md) for the
 full picture, data model and API.
 
+## Roadmap
+
+The hackathon build already covers the whole live-counts path end to end.
+The next version turns the single "Rank up" surface into a proper home for
+every rider.
+
+### Working today (v1)
+
+- **Live stand counts.** Every area on the campus, updated every few seconds
+  over LoRaWAN + the backend WebSocket.
+- **3D campus map.** One coloured pin per area, free count in a badge,
+  glides between stands when you tap one.
+- **No account, no install.** The web app at `app.slotinvaders.ch` works
+  for anyone with a browser.
+- **Native Android.** Signed APK you can sideload today
+  (`code/webpage/public/Slot_Invaders_v1.2.apk`, also served from the
+  landing page); iOS build is in review.
+- **Remembers your bike.** One tiny iBeacon per stand, all-local matching,
+  nothing uploaded.
+- **Privacy by design.** Only the integer count leaves the sensor — no
+  images, no identities, no tracking.
+
+### Coming next
+
+- **Personalisation.** Save your home stand, hide the ones you never use,
+  pin your favourites to the top of the list.
+- **Pick your preferred spot.** Mark a specific bay you aim for, and the
+  map tells you whether it's free before you set off.
+- **Gamification.** Deeper streaks, team challenges, friendly leaderboards
+  for the Reinach campus, seasonal badges.
+- **Analytics.** Your weekly km, days-by-bike history, best times of day
+  to find a slot — and a team view for departments that want it.
+- **Store listings live.** App Store and Play Store builds out of review
+  and installable in two taps.
+- **More sensors, more stands.** The architecture is already multi-site;
+  adding a new stand is one YAML entry and a sync.
+
 ## Repository layout
 
 Following the [BaselHack repo template](https://github.com/BaselHack/baselhack_repo_template):
