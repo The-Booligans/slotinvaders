@@ -28,6 +28,12 @@ Shared Copilot sessions let teammates view and follow a Copilot coding agent ses
 - Follow clean-code rules: small functions, clear names, one responsibility per unit.
 - Keep comments short and understandable. Only comment the *why* when it isn't obvious from the code.
 
+## How agents should handle documentation
+
+- Always check the `documentation/` directory before starting work, especially `documentation/architecture.md`. The architecture doc is the source of truth for how components fit together — read it so your changes stay consistent with it.
+- When your change affects architecture, components, data flow, deployment or any other fact described in the docs, update the relevant documentation in the same PR. A change that drifts from the docs is not done.
+- If the docs are silent on something you had to decide, add a short section rather than leaving the next agent to re-derive it.
+
 ## How agents should communicate
 
 - Short, understandable, concise. No filler, no restating the task, no closing summaries that repeat the diff.

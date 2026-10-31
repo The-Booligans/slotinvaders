@@ -1,0 +1,538 @@
+type Status = "ok" | "low" | "full";
+
+type Stand = {
+  name: string;
+  free: number;
+  total: number;
+  status: Status;
+};
+
+const stands: Stand[] = [
+  { name: "Haupteingang", free: 12, total: 20, status: "ok" },
+  { name: "Reinach-Süd", free: 7, total: 15, status: "ok" },
+  { name: "Reinach-Nord", free: 3, total: 18, status: "low" },
+  { name: "Werkseingang", free: 0, total: 12, status: "full" },
+  { name: "Besucher", free: 9, total: 10, status: "ok" },
+  { name: "Kantine", free: 4, total: 8, status: "ok" },
+];
+
+const team = [
+  "Dobrawa Kiefer",
+  "Nila M.",
+  "Artur Semenko",
+  "Luca Rullo",
+  "Samuel Rink",
+  "Valentino Rusconi",
+  "David Übelacker",
+];
+
+function Wordmark({ className = "wm--sm" }: { className?: string }) {
+  return (
+    <span className={`wm ${className}`} aria-label="Space + Invaders">
+      <span className="wm-text">Space + Invaders</span>
+      <svg className="wm-mark" aria-hidden="true">
+        <use href="#bike" />
+      </svg>
+    </span>
+  );
+}
+
+function AreaRow({ stand }: { stand: Stand }) {
+  const occupied = stand.total - stand.free;
+  const pct = Math.round((occupied / stand.total) * 100);
+  const barClass =
+    stand.status === "full"
+      ? "area-row__bar area-row__bar--red"
+      : stand.status === "low"
+        ? "area-row__bar area-row__bar--amber"
+        : "area-row__bar";
+  const chipClass =
+    stand.status === "full"
+      ? "chip chip--full"
+      : stand.status === "low"
+        ? "chip chip--low"
+        : "chip chip--ok";
+  const chipLabel =
+    stand.status === "full" ? "Full" : stand.status === "low" ? "• Low" : "• OK";
+  const countLabel =
+    stand.status === "full" ? `${stand.free} / ${stand.total}` : `${stand.free} / ${stand.total} free`;
+
+  return (
+    <div className="area-row">
+      <div className="area-row__icon">
+        <svg aria-hidden="true">
+          <use href="#bike" />
+        </svg>
+      </div>
+      <div className="area-row__main">
+        <div className="area-row__name">
+          {stand.name}
+          <span className="area-row__count">{countLabel}</span>
+        </div>
+        <div className={barClass}>
+          <span style={{ width: `${pct}%` }} />
+        </div>
+      </div>
+      <div className="area-row__status">
+        <span className={chipClass}>{chipLabel}</span>
+      </div>
+    </div>
+  );
+}
+
+export default function Page() {
+  return (
+    <>
+      <svg
+        xmlns="http://www.w3.org/2000/svg"
+        style={{ position: "absolute", width: 0, height: 0, overflow: "hidden" }}
+        aria-hidden="true"
+        focusable="false"
+      >
+        <defs>
+          <symbol id="bike" viewBox="0 0 100 100">
+            <rect x="0" y="0" width="100" height="100" fill="#22D3EE" />
+            <g
+              fill="none"
+              stroke="#FFFFFF"
+              strokeWidth="6.5"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+            >
+              <circle cx="27" cy="68" r="14" />
+              <circle cx="73" cy="68" r="14" />
+              <path d="M 42 42 L 60 42" />
+              <path d="M 42 42 L 50 68" />
+              <path d="M 60 42 L 50 68" />
+              <path d="M 27 68 L 50 68" />
+              <path d="M 27 68 L 42 42" />
+              <path d="M 60 42 L 73 68" />
+              <path d="M 38 34 L 46 34" />
+              <path d="M 60 42 L 60 34" />
+              <path d="M 56 34 L 64 34" />
+            </g>
+          </symbol>
+        </defs>
+      </svg>
+
+      <header className="site-header">
+        <div className="container">
+          <a href="#top" aria-label="Space + Invaders home">
+            <Wordmark />
+          </a>
+          <nav className="site-nav" aria-label="Primary">
+            <a href="#features">Features</a>
+            <a href="#device">Device</a>
+            <a href="#architecture">Architecture</a>
+            <a href="#privacy">Privacy</a>
+            <a href="#team">Team</a>
+            <a href="https://github.com/The-Booligans/slotinvaders">GitHub</a>
+          </nav>
+        </div>
+      </header>
+
+      <main id="top">
+        <section className="section hero">
+          <div className="container">
+            <div className="hero-grid">
+              <div className="hero-list">
+                <div className="panel" aria-label="Live stand list">
+                  <div className="tabs" role="tablist">
+                    <span className="tab is-active" role="tab" aria-selected="true">
+                      List
+                    </span>
+                    <span className="tab is-disabled" role="tab" aria-selected="false">
+                      Map <span className="chip">coming soon</span>
+                    </span>
+                  </div>
+                  <div className="panel-body">
+                    {stands.map((stand) => (
+                      <AreaRow key={stand.name} stand={stand} />
+                    ))}
+                  </div>
+                </div>
+              </div>
+
+              <div className="hero-copy">
+                <h1>Make finding a velo spot easy.</h1>
+                <p className="lead">
+                  Live counts for every bike parking area on the Endress+Hauser Reinach
+                  campus — before you even leave your desk.
+                </p>
+                <div className="hero-ctas">
+                  <a className="btn" href="#features">
+                    See it live
+                  </a>
+                  <a className="link-cta" href="#features">
+                    Learn how →
+                  </a>
+                </div>
+                <div className="hero-sig">
+                  <Wordmark className="" />
+                  <span className="micro">BaselHack 2026 · The Booligans</span>
+                </div>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section section--alt" id="features">
+          <div className="container">
+            <span className="eyebrow">Three ways to use it</span>
+            <h2>From a quick browser check to a bike you track</h2>
+            <p className="lead">
+              Everything works without an account. Signing in only adds the things an
+              account enables.
+            </p>
+
+            <div className="feature-grid">
+              <div className="feature-card">
+                <div className="feature-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <circle cx="12" cy="12" r="9" />
+                    <path d="M3 12h18" />
+                    <path d="M12 3c2.5 2.6 4 6 4 9s-1.5 6.4-4 9c-2.5-2.6-4-6-4-9s1.5-6.4 4-9z" />
+                  </svg>
+                </div>
+                <h3>Just the info</h3>
+                <p>
+                  Open the page, see every stand&rsquo;s live occupancy. No account, no
+                  install, nothing to configure.
+                </p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <rect x="7" y="2.5" width="10" height="19" rx="2.4" />
+                    <path d="M11 18.5h2" />
+                  </svg>
+                </div>
+                <h3>Remembers your bike</h3>
+                <p>
+                  Install the app. It remembers where you parked and reminds you when you
+                  need it. Still no account required.
+                </p>
+              </div>
+
+              <div className="feature-card">
+                <div className="feature-card__icon" aria-hidden="true">
+                  <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" strokeWidth="1.6">
+                    <circle cx="12" cy="9" r="3.6" />
+                    <path d="M4.5 20c1.5-3.6 4.4-5.4 7.5-5.4s6 1.8 7.5 5.4" />
+                  </svg>
+                </div>
+                <h3>Rank up</h3>
+                <p>
+                  Sign in and the app starts counting. Days by bike. Kilometres on your
+                  bike and e-bike. Earn badges for every three days in a row, every ride
+                  under −10°C — more to come.
+                </p>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section" id="device">
+          <div className="container">
+            <span className="eyebrow">The thing on the stand</span>
+            <h2>ESP32, solar-powered, LoRaWAN</h2>
+            <p className="lead">
+              A small sealed node per stand. No wiring, no WiFi, nothing to service.
+            </p>
+
+            <div className="device-grid">
+              <ul className="bullet-list">
+                <li className="bullet">
+                  <span className="bullet__num">01</span>
+                  <span className="bullet__text">
+                    ESP32 microcontroller counts bikes locally
+                  </span>
+                </li>
+                <li className="bullet">
+                  <span className="bullet__num">02</span>
+                  <span className="bullet__text">
+                    Weatherproof casing, mounted on each stand
+                  </span>
+                </li>
+                <li className="bullet">
+                  <span className="bullet__num">03</span>
+                  <span className="bullet__text">
+                    Battery + solar panel — zero wiring, zero maintenance
+                  </span>
+                </li>
+                <li className="bullet">
+                  <span className="bullet__num">04</span>
+                  <span className="bullet__text">
+                    Reports via LoRaWAN — no WiFi needed, long range, tiny power footprint
+                  </span>
+                </li>
+              </ul>
+
+              <div className="device-illustration" aria-hidden="true">
+                <svg viewBox="0 0 320 320" xmlns="http://www.w3.org/2000/svg">
+                  <line x1="30" y1="280" x2="290" y2="280" stroke="#D4DADF" strokeWidth="1" />
+                  <g>
+                    <rect
+                      x="110"
+                      y="90"
+                      width="110"
+                      height="28"
+                      fill="#FFFFFF"
+                      stroke="#000"
+                      strokeWidth="1.6"
+                    />
+                    <line x1="137.5" y1="90" x2="137.5" y2="118" stroke="#000" strokeWidth="1" />
+                    <line x1="165" y1="90" x2="165" y2="118" stroke="#000" strokeWidth="1" />
+                    <line x1="192.5" y1="90" x2="192.5" y2="118" stroke="#000" strokeWidth="1" />
+                    <line x1="110" y1="104" x2="220" y2="104" stroke="#000" strokeWidth="0.8" />
+                  </g>
+                  <line x1="165" y1="118" x2="165" y2="140" stroke="#000" strokeWidth="1.6" />
+                  <rect
+                    x="130"
+                    y="140"
+                    width="70"
+                    height="80"
+                    rx="3"
+                    fill="#FFFFFF"
+                    stroke="#000"
+                    strokeWidth="1.6"
+                  />
+                  <circle cx="188" cy="152" r="2.6" fill="#22D3EE" />
+                  <line x1="140" y1="200" x2="190" y2="200" stroke="#000" strokeWidth="0.8" />
+                  <line x1="140" y1="206" x2="190" y2="206" stroke="#000" strokeWidth="0.8" />
+                  <line x1="140" y1="212" x2="190" y2="212" stroke="#000" strokeWidth="0.8" />
+                  <rect x="140" y="162" width="40" height="22" fill="none" stroke="#000" strokeWidth="0.8" />
+                  <text
+                    x="160"
+                    y="177"
+                    textAnchor="middle"
+                    fontFamily="Barlow, sans-serif"
+                    fontSize="9"
+                    fontWeight="600"
+                    fill="#000"
+                    letterSpacing="1"
+                  >
+                    ESP32
+                  </text>
+                  <rect x="162" y="220" width="6" height="60" fill="#000" />
+                  <path
+                    d="M 70 280 Q 70 260 90 260 Q 110 260 110 280"
+                    stroke="#000"
+                    strokeWidth="1.6"
+                    fill="none"
+                  />
+                  <path
+                    d="M 210 280 Q 210 260 230 260 Q 250 260 250 280"
+                    stroke="#000"
+                    strokeWidth="1.6"
+                    fill="none"
+                  />
+                  <g stroke="#22D3EE" strokeWidth="2.2" fill="none" strokeLinecap="round">
+                    <path d="M 215 150 Q 232 142 248 150" />
+                    <path d="M 220 136 Q 244 123 268 136" />
+                    <path d="M 225 122 Q 256 104 288 122" />
+                  </g>
+                  <line x1="195" y1="140" x2="208" y2="128" stroke="#000" strokeWidth="1.6" />
+                  <circle cx="208" cy="128" r="2.4" fill="#000" />
+                </svg>
+              </div>
+            </div>
+          </div>
+        </section>
+
+        <section className="section section--alt" id="architecture">
+          <div className="container">
+            <span className="eyebrow">Under the hood</span>
+            <h2>Six sensors → the cloud → every open client</h2>
+            <p className="lead">
+              A classic edge-to-cloud fan-out. Nothing exotic, nothing proprietary.
+            </p>
+
+            <div className="arch">
+              <div className="arch-diagram">
+                <svg viewBox="0 0 1120 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture diagram">
+                  <defs>
+                    <marker
+                      id="arrow"
+                      viewBox="0 0 10 10"
+                      refX="9"
+                      refY="5"
+                      markerWidth="7"
+                      markerHeight="7"
+                      orient="auto-start-reverse"
+                    >
+                      <path d="M 0 0 L 10 5 L 0 10 z" fill="#000" />
+                    </marker>
+                  </defs>
+
+                  <g>
+                    <rect x="20" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
+                    <text x="110" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                      01 · EDGE
+                    </text>
+                    <text x="110" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                      6 ESP32 nodes
+                    </text>
+                    <text x="110" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                      one per bike stand
+                    </text>
+                    <g fill="#22D3EE">
+                      <rect x="40" y="166" width="6" height="6" />
+                      <rect x="52" y="166" width="6" height="6" />
+                      <rect x="64" y="166" width="6" height="6" />
+                      <rect x="76" y="166" width="6" height="6" />
+                      <rect x="88" y="166" width="6" height="6" />
+                      <rect x="100" y="166" width="6" height="6" />
+                    </g>
+                  </g>
+
+                  <line x1="202" y1="130" x2="248" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
+                  <text x="225" y="118" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fill="#525E6B" letterSpacing="1">
+                    LoRaWAN
+                  </text>
+
+                  <g>
+                    <rect x="250" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
+                    <text x="340" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                      02 · INGRESS
+                    </text>
+                    <text x="340" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                      LoRaWAN Gateway
+                    </text>
+                    <text x="340" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                      campus coverage
+                    </text>
+                  </g>
+
+                  <line x1="432" y1="130" x2="478" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
+                  <text x="455" y="118" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fill="#525E6B" letterSpacing="1">
+                    HTTPS
+                  </text>
+
+                  <g>
+                    <rect x="480" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
+                    <text x="570" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                      03 · COMPUTE
+                    </text>
+                    <text x="570" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                      Azure Functions
+                    </text>
+                    <text x="570" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                      Node 22 · serverless
+                    </text>
+                  </g>
+
+                  <line x1="662" y1="130" x2="708" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
+
+                  <g>
+                    <rect x="710" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
+                    <text x="800" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                      04 · STATE &amp; FANOUT
+                    </text>
+                    <text x="800" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                      Cosmos DB
+                    </text>
+                    <text x="800" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                      + Web PubSub
+                    </text>
+                  </g>
+
+                  <line x1="892" y1="130" x2="938" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
+                  <text x="915" y="118" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fill="#525E6B" letterSpacing="1">
+                    WebSocket
+                  </text>
+
+                  <g>
+                    <rect x="940" y="80" width="160" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
+                    <text x="1020" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                      05 · CLIENTS
+                    </text>
+                    <text x="1020" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                      Web · iOS · Android
+                    </text>
+                    <text x="1020" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                      every open viewer
+                    </text>
+                  </g>
+                </svg>
+              </div>
+              <p className="arch-caption">
+                Devices publish counts over LoRaWAN. The backend fans updates out over
+                WebSockets in under a second. See <code>architecture.md</code> for details.
+              </p>
+            </div>
+          </div>
+        </section>
+
+        <section className="section section--alt" id="privacy">
+          <div className="container">
+            <span className="eyebrow">Privacy by design</span>
+            <h2>No faces, no plates, no tracking — not even yours</h2>
+
+            <div className="privacy-grid">
+              <div className="privacy-block">
+                <h3>
+                  <span className="label">Plan A</span> Counting without cameras
+                </h3>
+                <p>
+                  Non-image sensors (ToF arrays, LiDAR, mmWave radar, ultrasonic) or
+                  on-device CV. Only one integer — how many bikes the stand sees — ever
+                  leaves the device. There is nothing to lose or leak.
+                </p>
+              </div>
+              <div className="privacy-block">
+                <h3>
+                  <span className="label">Plan B</span> Fallback with camera
+                </h3>
+                <p>
+                  Only where no sensor configuration clears the bar. The image is counted
+                  by Azure AI Vision and dropped from memory in the same call. The code
+                  path exists as a safety net, not as the target.
+                </p>
+              </div>
+            </div>
+
+            <div className="callout">
+              <span className="dot" />
+              The challenge is explicit: no identifying individuals. We go further.
+            </div>
+          </div>
+        </section>
+
+        <section className="section" id="team">
+          <div className="container">
+            <span className="eyebrow">The team</span>
+            <h2>The Booligans</h2>
+            <p className="lead">Seven people, 48 hours, one working stack.</p>
+
+            <div className="team-grid">
+              {team.map((name) => (
+                <div key={name} className="team-card">
+                  <span className="dot" aria-hidden="true" />
+                  <span className="name">{name}</span>
+                </div>
+              ))}
+            </div>
+          </div>
+        </section>
+      </main>
+
+      <footer className="site-footer">
+        <div className="container">
+          <div className="footer-row">
+            <Wordmark />
+            <div className="footer-links">
+              <a href="https://github.com/The-Booligans/slotinvaders">GitHub</a>
+              <a href="https://opensource.org/licenses/MIT">License (MIT)</a>
+              <a href="https://baselhack.ch">BaselHack 2026</a>
+            </div>
+          </div>
+          <div className="footer-micro">
+            Built in 48 hours at BaselHack 2026 by The Booligans. MIT licensed.
+          </div>
+        </div>
+      </footer>
+    </>
+  );
+}
