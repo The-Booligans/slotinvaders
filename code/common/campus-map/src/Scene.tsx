@@ -1,4 +1,4 @@
-import { Suspense, useEffect, useMemo, useRef } from 'react';
+import { Suspense, useEffect, useMemo, useRef, type MutableRefObject } from 'react';
 import { useFrame, useThree } from '@react-three/fiber';
 import { OrbitControls } from '@react-three/drei';
 import * as THREE from 'three';
@@ -7,6 +7,7 @@ import { CENTRE } from './campus-data';
 import { STYLE } from './style';
 import { Buildings } from './Buildings';
 import { Island } from './Island';
+import { CameraReporter, type CameraInfo } from './CameraReporter';
 
 /**
  * Everything that lives inside the Canvas: lights, the island ground, the
@@ -74,9 +75,11 @@ export interface SceneProps {
   glbUrl: string;
   /** metres to shift the orbit target; use to compose the island off-centre */
   offset?: [number, number];
+  /** when set, every frame writes the current camera dir/target/distance into it */
+  debugRef?: MutableRefObject<CameraInfo | null>;
 }
 
-export function Scene({ glbUrl, offset }: SceneProps) {
+export function Scene({ glbUrl, offset, debugRef }: SceneProps) {
   return (
     <>
       <color attach="background" args={[STYLE.sky]} />
@@ -110,6 +113,8 @@ export function Scene({ glbUrl, offset }: SceneProps) {
       </Suspense>
 
       <Rig offset={offset} />
+
+      {debugRef && <CameraReporter into={debugRef} />}
     </>
   );
 }

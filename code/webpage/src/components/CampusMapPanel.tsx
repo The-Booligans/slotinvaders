@@ -16,9 +16,11 @@ interface Props {
   /** On desktop, shift the orbit target west so the island reads to the right
       of the hero (away from the white card on the left). */
   heroDesktop?: boolean;
+  /** Show the live camera-dir HUD so you can orbit the map and read the numbers off */
+  debug?: boolean;
 }
 
-export function CampusMapPanel({ heroDesktop = false }: Props) {
+export function CampusMapPanel({ heroDesktop = false, debug = false }: Props) {
   const [wide, setWide] = useState(false);
 
   useEffect(() => {
@@ -30,11 +32,13 @@ export function CampusMapPanel({ heroDesktop = false }: Props) {
     return () => mq.removeEventListener("change", update);
   }, [heroDesktop]);
 
-  const offset = wide ? ([-170, 0] as [number, number]) : undefined;
+  // in debug mode, pivot around the island centre so rotation is natural;
+  // offline, shift it so the island sits to the right of the hero card
+  const offset = !debug && wide ? ([-170, 0] as [number, number]) : undefined;
 
   return (
     <div className="campus-map">
-      <SlotInvadersCampusMap offset={offset} />
+      <SlotInvadersCampusMap offset={offset} debug={debug} />
     </div>
   );
 }

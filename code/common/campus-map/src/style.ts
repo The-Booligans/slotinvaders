@@ -31,10 +31,10 @@ export const STYLE = {
   island: { side: '#A98F6B', base: '#CFE3EF', radius: 330 },
 
   camera: {
-    dir: [0.3, 0.62, 0.78] as [number, number, number],
-    fit: 0.78,
+    dir: [0.3, 0.42, 0.88] as [number, number, number],
+    fit: 0.82,
     fov: 36,
-    maxPolar: 1.2,
+    maxPolar: 1.35,
   },
 };
 
