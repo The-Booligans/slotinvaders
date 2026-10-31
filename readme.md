@@ -97,11 +97,15 @@ Details and numbers in
  └──────────────────────────────┘      └─────────────────────────┘      └────────────┘
 ```
 
-Devices `POST /v1/readings` with their count over Wi-Fi and HTTPS. Free slots
-= stand slots − sum of device counts. Cosmos DB holds the catalog (areas,
-stands, devices, assignments), the latest count per device and 30 days of
-readings. A timer pushes every stand's status over WebSockets every 10 s, so
-every open client is at most about 10 s behind.
+Devices `POST /v1/readings` with their count. We tested the firmware over
+campus Wi-Fi + HTTPS, but **we recommend LoRaWAN** for production — campus
+Wi-Fi doesn't reach every stand (open yards, basement garages, remote racks),
+and LoRaWAN lets the device run on battery or a small solar panel with no
+mains cabling. The gateway relays the uplinks over HTTPS to the backend.
+Free slots = stand slots − sum of device counts. Cosmos DB holds the catalog
+(areas, stands, devices, assignments), the latest count per device and
+30 days of readings. A timer pushes every stand's status over WebSockets
+every 10 s, so every open client is at most about 10 s behind.
 
 See [`documentation/architecture.md`](documentation/architecture.md) for the
 full picture, data model and API.

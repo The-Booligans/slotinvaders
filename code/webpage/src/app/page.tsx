@@ -98,6 +98,22 @@ export default function Page() {
           <div className="hero-map" aria-hidden="true">
             <CampusMapPanel heroDesktop />
           </div>
+          <a className="hero-eyebrow hero-eyebrow--top" href="#privacy">
+            <svg
+              className="hero-eyebrow-icon"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+              focusable="false"
+            >
+              <path d="M12 2 4 5v6c0 5 3.4 9.4 8 11 4.6-1.6 8-6 8-11V5l-8-3z" />
+            </svg>
+            Privacy first · Trusted by employees
+          </a>
           <div className="container hero-overlay">
             <div className="hero-copy hero-copy--card">
               <h1>Make finding a velo spot easy.</h1>
@@ -287,7 +303,14 @@ export default function Page() {
                 <li className="bullet">
                   <span className="bullet__num">04</span>
                   <span className="bullet__text">
-                    Reports the count over Wi-Fi and HTTPS every few seconds
+                    Reports the count over LoRaWAN — no site Wi-Fi needed, reaches a gateway hundreds
+                    of metres away
+                  </span>
+                </li>
+                <li className="bullet">
+                  <span className="bullet__num">05</span>
+                  <span className="bullet__text">
+                    Runs on battery or a small solar panel — no mains, no cabling, mount it anywhere
                   </span>
                 </li>
               </ul>
@@ -470,7 +493,7 @@ export default function Page() {
                     fill="#525E6B"
                     letterSpacing="1"
                   >
-                    WI-FI
+                    LORAWAN
                   </text>
 
                   <g>
@@ -504,7 +527,7 @@ export default function Page() {
                       fontWeight="600"
                       fill="#000"
                     >
-                      Campus Wi-Fi
+                      LoRaWAN gateway
                     </text>
                     <text
                       x="340"
@@ -514,7 +537,7 @@ export default function Page() {
                       fontSize="11.5"
                       fill="#525E6B"
                     >
-                      2.4 GHz · TLS
+                      868 MHz · AES-128
                     </text>
                   </g>
 
@@ -707,9 +730,10 @@ export default function Page() {
                 </svg>
               </div>
               <p className="arch-caption">
-                Devices POST their count over Wi-Fi and HTTPS. Cosmos DB keeps the stand catalog,
-                the latest count per device and 30 days of readings. Web PubSub pushes every
-                stand&rsquo;s status to open clients every 10 seconds. See{" "}
+                Devices send their count over LoRaWAN — battery- or solar-powered, no site Wi-Fi,
+                no cabling. A gateway relays the uplinks over HTTPS to the backend. Cosmos DB keeps
+                the stand catalog, the latest count per device and 30 days of readings. Web PubSub
+                pushes every stand&rsquo;s status to open clients every 10 seconds. See{" "}
                 <code>architecture.md</code> for details.
               </p>
             </div>

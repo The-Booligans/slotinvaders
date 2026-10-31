@@ -28,6 +28,25 @@ below).
    [`code/firmware/mule`](../code/firmware/mule) and
    [`code/firmware/hydra`](../code/firmware/hydra).
 
+## Uplink: Wi-Fi (tested) vs. LoRaWAN (recommended)
+
+We tested both counting solutions with the firmware uplinking over **campus
+Wi-Fi + HTTPS** — fast to iterate during the hackathon and no gateway
+required. For production we **recommend LoRaWAN**:
+
+- Campus Wi-Fi doesn't reach every stand we care about: open yards and
+  outdoor racks have no AP in range, and basement garages are RF dead zones
+  for 2.4 GHz.
+- The payload is a single integer, well inside the LoRaWAN per-airtime
+  budget even with regional duty cycles.
+- A LoRaWAN node sleeps between uplinks and wakes to send a few bytes, so a
+  stand can run on battery or a small solar panel with **no mains cabling** —
+  the device goes anywhere a sensor view fits.
+
+The backend contract stays the same: the LoRaWAN gateway relays the uplink
+over HTTPS to `POST /api/v1/readings`, and the Function App can't tell the
+two paths apart.
+
 ## What is deployed per stand
 
 From the catalog in Cosmos DB (`code/backend/velo-stands-cosmos/stands.yaml`):

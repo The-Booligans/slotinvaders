@@ -2,6 +2,8 @@
 
 Every sketch in this directory is a Slot Invaders bike-counting device. They all join Wi-Fi over 2.4 GHz, authenticate the same way, and POST to the same Azure Functions base URL. The authoritative API spec lives in [`documentation/architecture.md`](../../documentation/architecture.md); this README is the firmware-side cheat sheet: what every device needs to agree on, how to flash credentials, and which endpoints each sketch uses.
 
+> **Transport.** These sketches are what we tested during the hackathon: direct Wi-Fi + HTTPS so we could iterate fast with no gateway. **For production we recommend LoRaWAN** — campus Wi-Fi doesn't reach every stand (open yards, basement garages, remote racks), and a LoRaWAN node runs on battery or a small solar panel with no mains cabling. The gateway relays uplinks over HTTPS to the same `POST /v1/readings` endpoint, so the backend contract is unchanged. See [sensor-evaluation.md](../../documentation/sensor-evaluation.md#uplink-wi-fi-tested-vs-lorawan-recommended).
+
 ## Devices in this folder
 
 | Dir | Hardware | What it sends | Catalog device and stand |
