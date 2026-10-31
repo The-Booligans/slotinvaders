@@ -1,20 +1,4 @@
-type Status = "ok" | "low" | "full";
-
-type Stand = {
-  name: string;
-  free: number;
-  total: number;
-  status: Status;
-};
-
-const stands: Stand[] = [
-  { name: "Haupteingang", free: 12, total: 20, status: "ok" },
-  { name: "Reinach-Süd", free: 7, total: 15, status: "ok" },
-  { name: "Reinach-Nord", free: 3, total: 18, status: "low" },
-  { name: "Werkseingang", free: 0, total: 12, status: "full" },
-  { name: "Besucher", free: 9, total: 10, status: "ok" },
-  { name: "Kantine", free: 4, total: 8, status: "ok" },
-];
+import { StandPanel } from "@/components/StandPanel";
 
 const team = [
   "Dobrawa Kiefer",
@@ -34,49 +18,6 @@ function Wordmark({ className = "wm--sm" }: { className?: string }) {
         <use href="#bike" />
       </svg>
     </span>
-  );
-}
-
-function AreaRow({ stand }: { stand: Stand }) {
-  const occupied = stand.total - stand.free;
-  const pct = Math.round((occupied / stand.total) * 100);
-  const barClass =
-    stand.status === "full"
-      ? "area-row__bar area-row__bar--red"
-      : stand.status === "low"
-        ? "area-row__bar area-row__bar--amber"
-        : "area-row__bar";
-  const chipClass =
-    stand.status === "full"
-      ? "chip chip--full"
-      : stand.status === "low"
-        ? "chip chip--low"
-        : "chip chip--ok";
-  const chipLabel =
-    stand.status === "full" ? "Full" : stand.status === "low" ? "• Low" : "• OK";
-  const countLabel =
-    stand.status === "full" ? `${stand.free} / ${stand.total}` : `${stand.free} / ${stand.total} free`;
-
-  return (
-    <div className="area-row">
-      <div className="area-row__icon">
-        <svg aria-hidden="true">
-          <use href="#bike" />
-        </svg>
-      </div>
-      <div className="area-row__main">
-        <div className="area-row__name">
-          {stand.name}
-          <span className="area-row__count">{countLabel}</span>
-        </div>
-        <div className={barClass}>
-          <span style={{ width: `${pct}%` }} />
-        </div>
-      </div>
-      <div className="area-row__status">
-        <span className={chipClass}>{chipLabel}</span>
-      </div>
-    </div>
   );
 }
 
@@ -136,28 +77,14 @@ export default function Page() {
           <div className="container">
             <div className="hero-grid">
               <div className="hero-list">
-                <div className="panel" aria-label="Live stand list">
-                  <div className="tabs" role="tablist">
-                    <span className="tab is-active" role="tab" aria-selected="true">
-                      List
-                    </span>
-                    <span className="tab is-disabled" role="tab" aria-selected="false">
-                      Map <span className="chip">coming soon</span>
-                    </span>
-                  </div>
-                  <div className="panel-body">
-                    {stands.map((stand) => (
-                      <AreaRow key={stand.name} stand={stand} />
-                    ))}
-                  </div>
-                </div>
+                <StandPanel />
               </div>
 
               <div className="hero-copy">
                 <h1>Make finding a velo spot easy.</h1>
                 <p className="lead">
-                  Live counts for every bike parking area on the Endress+Hauser Reinach
-                  campus — before you even leave your desk.
+                  Live counts for every bike parking area on the Endress+Hauser Reinach campus —
+                  before you even leave your desk.
                 </p>
                 <div className="hero-ctas">
                   <a className="btn" href="#features">
@@ -181,8 +108,8 @@ export default function Page() {
             <span className="eyebrow">Three ways to use it</span>
             <h2>From a quick browser check to a bike you track</h2>
             <p className="lead">
-              Everything works without an account. Signing in only adds the things an
-              account enables.
+              Everything works without an account. Signing in only adds the things an account
+              enables.
             </p>
 
             <div className="feature-grid">
@@ -196,8 +123,8 @@ export default function Page() {
                 </div>
                 <h3>Just the info</h3>
                 <p>
-                  Open the page, see every stand&rsquo;s live occupancy. No account, no
-                  install, nothing to configure.
+                  Open the page, see every stand&rsquo;s live occupancy. No account, no install,
+                  nothing to configure.
                 </p>
               </div>
 
@@ -210,8 +137,8 @@ export default function Page() {
                 </div>
                 <h3>Remembers your bike</h3>
                 <p>
-                  Install the app. It remembers where you parked and reminds you when you
-                  need it. Still no account required.
+                  Install the app. It remembers where you parked and reminds you when you need it.
+                  Still no account required.
                 </p>
               </div>
 
@@ -224,9 +151,9 @@ export default function Page() {
                 </div>
                 <h3>Rank up</h3>
                 <p>
-                  Sign in and the app starts counting. Days by bike. Kilometres on your
-                  bike and e-bike. Earn badges for every three days in a row, every ride
-                  under −10°C — more to come.
+                  Sign in and the app starts counting. Days by bike. Kilometres on your bike and
+                  e-bike. Earn badges for every three days in a row, every ride under −10°C — more
+                  to come.
                 </p>
               </div>
             </div>
@@ -245,15 +172,11 @@ export default function Page() {
               <ul className="bullet-list">
                 <li className="bullet">
                   <span className="bullet__num">01</span>
-                  <span className="bullet__text">
-                    ESP32 microcontroller counts bikes locally
-                  </span>
+                  <span className="bullet__text">ESP32 microcontroller counts bikes locally</span>
                 </li>
                 <li className="bullet">
                   <span className="bullet__num">02</span>
-                  <span className="bullet__text">
-                    Weatherproof casing, mounted on each stand
-                  </span>
+                  <span className="bullet__text">Weatherproof casing, mounted on each stand</span>
                 </li>
                 <li className="bullet">
                   <span className="bullet__num">03</span>
@@ -302,7 +225,15 @@ export default function Page() {
                   <line x1="140" y1="200" x2="190" y2="200" stroke="#000" strokeWidth="0.8" />
                   <line x1="140" y1="206" x2="190" y2="206" stroke="#000" strokeWidth="0.8" />
                   <line x1="140" y1="212" x2="190" y2="212" stroke="#000" strokeWidth="0.8" />
-                  <rect x="140" y="162" width="40" height="22" fill="none" stroke="#000" strokeWidth="0.8" />
+                  <rect
+                    x="140"
+                    y="162"
+                    width="40"
+                    height="22"
+                    fill="none"
+                    stroke="#000"
+                    strokeWidth="0.8"
+                  />
                   <text
                     x="160"
                     y="177"
@@ -351,7 +282,12 @@ export default function Page() {
 
             <div className="arch">
               <div className="arch-diagram">
-                <svg viewBox="0 0 1120 260" xmlns="http://www.w3.org/2000/svg" role="img" aria-label="Architecture diagram">
+                <svg
+                  viewBox="0 0 1120 260"
+                  xmlns="http://www.w3.org/2000/svg"
+                  role="img"
+                  aria-label="Architecture diagram"
+                >
                   <defs>
                     <marker
                       id="arrow"
@@ -367,14 +303,46 @@ export default function Page() {
                   </defs>
 
                   <g>
-                    <rect x="20" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
-                    <text x="110" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                    <rect
+                      x="20"
+                      y="80"
+                      width="180"
+                      height="100"
+                      fill="#FFFFFF"
+                      stroke="#000"
+                      strokeWidth="1.4"
+                    />
+                    <text
+                      x="110"
+                      y="106"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="10"
+                      fontWeight="700"
+                      fill="#22D3EE"
+                      letterSpacing="2"
+                    >
                       01 · EDGE
                     </text>
-                    <text x="110" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                    <text
+                      x="110"
+                      y="134"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="17"
+                      fontWeight="600"
+                      fill="#000"
+                    >
                       6 ESP32 nodes
                     </text>
-                    <text x="110" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                    <text
+                      x="110"
+                      y="156"
+                      textAnchor="middle"
+                      fontFamily="Inter, sans-serif"
+                      fontSize="11.5"
+                      fill="#525E6B"
+                    >
                       one per bike stand
                     </text>
                     <g fill="#22D3EE">
@@ -387,79 +355,263 @@ export default function Page() {
                     </g>
                   </g>
 
-                  <line x1="202" y1="130" x2="248" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
-                  <text x="225" y="118" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fill="#525E6B" letterSpacing="1">
+                  <line
+                    x1="202"
+                    y1="130"
+                    x2="248"
+                    y2="130"
+                    stroke="#000"
+                    strokeWidth="1.4"
+                    markerEnd="url(#arrow)"
+                  />
+                  <text
+                    x="225"
+                    y="118"
+                    textAnchor="middle"
+                    fontFamily="Barlow, sans-serif"
+                    fontSize="10"
+                    fill="#525E6B"
+                    letterSpacing="1"
+                  >
                     LoRaWAN
                   </text>
 
                   <g>
-                    <rect x="250" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
-                    <text x="340" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                    <rect
+                      x="250"
+                      y="80"
+                      width="180"
+                      height="100"
+                      fill="#FFFFFF"
+                      stroke="#000"
+                      strokeWidth="1.4"
+                    />
+                    <text
+                      x="340"
+                      y="106"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="10"
+                      fontWeight="700"
+                      fill="#22D3EE"
+                      letterSpacing="2"
+                    >
                       02 · INGRESS
                     </text>
-                    <text x="340" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                    <text
+                      x="340"
+                      y="134"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="17"
+                      fontWeight="600"
+                      fill="#000"
+                    >
                       LoRaWAN Gateway
                     </text>
-                    <text x="340" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                    <text
+                      x="340"
+                      y="156"
+                      textAnchor="middle"
+                      fontFamily="Inter, sans-serif"
+                      fontSize="11.5"
+                      fill="#525E6B"
+                    >
                       campus coverage
                     </text>
                   </g>
 
-                  <line x1="432" y1="130" x2="478" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
-                  <text x="455" y="118" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fill="#525E6B" letterSpacing="1">
+                  <line
+                    x1="432"
+                    y1="130"
+                    x2="478"
+                    y2="130"
+                    stroke="#000"
+                    strokeWidth="1.4"
+                    markerEnd="url(#arrow)"
+                  />
+                  <text
+                    x="455"
+                    y="118"
+                    textAnchor="middle"
+                    fontFamily="Barlow, sans-serif"
+                    fontSize="10"
+                    fill="#525E6B"
+                    letterSpacing="1"
+                  >
                     HTTPS
                   </text>
 
                   <g>
-                    <rect x="480" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
-                    <text x="570" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                    <rect
+                      x="480"
+                      y="80"
+                      width="180"
+                      height="100"
+                      fill="#FFFFFF"
+                      stroke="#000"
+                      strokeWidth="1.4"
+                    />
+                    <text
+                      x="570"
+                      y="106"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="10"
+                      fontWeight="700"
+                      fill="#22D3EE"
+                      letterSpacing="2"
+                    >
                       03 · COMPUTE
                     </text>
-                    <text x="570" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                    <text
+                      x="570"
+                      y="134"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="17"
+                      fontWeight="600"
+                      fill="#000"
+                    >
                       Azure Functions
                     </text>
-                    <text x="570" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                    <text
+                      x="570"
+                      y="156"
+                      textAnchor="middle"
+                      fontFamily="Inter, sans-serif"
+                      fontSize="11.5"
+                      fill="#525E6B"
+                    >
                       Node 22 · serverless
                     </text>
                   </g>
 
-                  <line x1="662" y1="130" x2="708" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
+                  <line
+                    x1="662"
+                    y1="130"
+                    x2="708"
+                    y2="130"
+                    stroke="#000"
+                    strokeWidth="1.4"
+                    markerEnd="url(#arrow)"
+                  />
 
                   <g>
-                    <rect x="710" y="80" width="180" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
-                    <text x="800" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                    <rect
+                      x="710"
+                      y="80"
+                      width="180"
+                      height="100"
+                      fill="#FFFFFF"
+                      stroke="#000"
+                      strokeWidth="1.4"
+                    />
+                    <text
+                      x="800"
+                      y="106"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="10"
+                      fontWeight="700"
+                      fill="#22D3EE"
+                      letterSpacing="2"
+                    >
                       04 · STATE &amp; FANOUT
                     </text>
-                    <text x="800" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                    <text
+                      x="800"
+                      y="134"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="17"
+                      fontWeight="600"
+                      fill="#000"
+                    >
                       Cosmos DB
                     </text>
-                    <text x="800" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                    <text
+                      x="800"
+                      y="156"
+                      textAnchor="middle"
+                      fontFamily="Inter, sans-serif"
+                      fontSize="11.5"
+                      fill="#525E6B"
+                    >
                       + Web PubSub
                     </text>
                   </g>
 
-                  <line x1="892" y1="130" x2="938" y2="130" stroke="#000" strokeWidth="1.4" markerEnd="url(#arrow)" />
-                  <text x="915" y="118" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fill="#525E6B" letterSpacing="1">
+                  <line
+                    x1="892"
+                    y1="130"
+                    x2="938"
+                    y2="130"
+                    stroke="#000"
+                    strokeWidth="1.4"
+                    markerEnd="url(#arrow)"
+                  />
+                  <text
+                    x="915"
+                    y="118"
+                    textAnchor="middle"
+                    fontFamily="Barlow, sans-serif"
+                    fontSize="10"
+                    fill="#525E6B"
+                    letterSpacing="1"
+                  >
                     WebSocket
                   </text>
 
                   <g>
-                    <rect x="940" y="80" width="160" height="100" fill="#FFFFFF" stroke="#000" strokeWidth="1.4" />
-                    <text x="1020" y="106" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="10" fontWeight="700" fill="#22D3EE" letterSpacing="2">
+                    <rect
+                      x="940"
+                      y="80"
+                      width="160"
+                      height="100"
+                      fill="#FFFFFF"
+                      stroke="#000"
+                      strokeWidth="1.4"
+                    />
+                    <text
+                      x="1020"
+                      y="106"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="10"
+                      fontWeight="700"
+                      fill="#22D3EE"
+                      letterSpacing="2"
+                    >
                       05 · CLIENTS
                     </text>
-                    <text x="1020" y="134" textAnchor="middle" fontFamily="Barlow, sans-serif" fontSize="17" fontWeight="600" fill="#000">
+                    <text
+                      x="1020"
+                      y="134"
+                      textAnchor="middle"
+                      fontFamily="Barlow, sans-serif"
+                      fontSize="17"
+                      fontWeight="600"
+                      fill="#000"
+                    >
                       Web · iOS · Android
                     </text>
-                    <text x="1020" y="156" textAnchor="middle" fontFamily="Inter, sans-serif" fontSize="11.5" fill="#525E6B">
+                    <text
+                      x="1020"
+                      y="156"
+                      textAnchor="middle"
+                      fontFamily="Inter, sans-serif"
+                      fontSize="11.5"
+                      fill="#525E6B"
+                    >
                       every open viewer
                     </text>
                   </g>
                 </svg>
               </div>
               <p className="arch-caption">
-                Devices publish counts over LoRaWAN. The backend fans updates out over
-                WebSockets in under a second. See <code>architecture.md</code> for details.
+                Devices publish counts over LoRaWAN. The backend fans updates out over WebSockets in
+                under a second. See <code>architecture.md</code> for details.
               </p>
             </div>
           </div>
@@ -476,9 +628,9 @@ export default function Page() {
                   <span className="label">Plan A</span> Counting without cameras
                 </h3>
                 <p>
-                  Non-image sensors (ToF arrays, LiDAR, mmWave radar, ultrasonic) or
-                  on-device CV. Only one integer — how many bikes the stand sees — ever
-                  leaves the device. There is nothing to lose or leak.
+                  Non-image sensors (ToF arrays, LiDAR, mmWave radar, ultrasonic) or on-device CV.
+                  Only one integer — how many bikes the stand sees — ever leaves the device. There
+                  is nothing to lose or leak.
                 </p>
               </div>
               <div className="privacy-block">
@@ -486,9 +638,9 @@ export default function Page() {
                   <span className="label">Plan B</span> Fallback with camera
                 </h3>
                 <p>
-                  Only where no sensor configuration clears the bar. The image is counted
-                  by Azure AI Vision and dropped from memory in the same call. The code
-                  path exists as a safety net, not as the target.
+                  Only where no sensor configuration clears the bar. The image is counted by Azure
+                  AI Vision and dropped from memory in the same call. The code path exists as a
+                  safety net, not as the target.
                 </p>
               </div>
             </div>
