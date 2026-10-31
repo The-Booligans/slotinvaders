@@ -141,8 +141,6 @@ every rider.
   for the Reinach campus, seasonal badges.
 - **Analytics.** Your weekly km, days-by-bike history, best times of day
   to find a slot — and a team view for departments that want it.
-- **Store listings live.** App Store and Play Store builds out of review
-  and installable in two taps.
 - **More sensors, more stands.** The architecture is already multi-site;
   adding a new stand is one YAML entry and a sync.
 

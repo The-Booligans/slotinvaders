@@ -942,10 +942,6 @@ export default function Page() {
                     of day to find a slot — and a team view for departments that want it.
                   </li>
                   <li>
-                    <strong>Store listings live.</strong> App Store and Play Store builds out of
-                    review and installable in two taps.
-                  </li>
-                  <li>
                     <strong>More sensors, more stands.</strong> The architecture is already
                     multi-site; adding a new stand is one YAML entry and a sync.
                   </li>
