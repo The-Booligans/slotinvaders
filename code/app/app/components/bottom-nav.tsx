@@ -1,16 +1,17 @@
 import type { ComponentType, SVGProps } from "react";
-import { MapIcon, UserIcon } from "./icons";
+import { ListIcon, MapIcon, UserIcon } from "./icons";
 
-export type Tab = "map" | "profile";
+export type Tab = "map" | "list" | "profile";
 
 const TABS: { id: Tab; label: string; Icon: ComponentType<SVGProps<SVGSVGElement>> }[] = [
   { id: "map", label: "Map", Icon: MapIcon },
+  { id: "list", label: "List", Icon: ListIcon },
   { id: "profile", label: "Profile", Icon: UserIcon },
 ];
 
 export function BottomNav({ active, onChange }: { active: Tab; onChange: (tab: Tab) => void }) {
   return (
-    <nav className="z-30 grid grid-cols-2 border-t border-black/5 bg-white pb-[env(safe-area-inset-bottom)]">
+    <nav className="z-30 grid grid-cols-3 border-t border-black/5 bg-white pb-[env(safe-area-inset-bottom)]">
       {TABS.map(({ id, label, Icon }) => {
         const selected = id === active;
         return (
