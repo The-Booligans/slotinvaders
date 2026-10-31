@@ -19,6 +19,15 @@
 //     Content-Type: application/json
 //     { "occupied": N, "seq": SEQ, "fw": "...", "rssi": R }
 //
+// Alongside the reading, thor also uploads a tiny SVG sketch of the current
+// slot state to the debug app, so a LiDAR unit has something to look at
+// (cameras upload a JPEG the same way):
+//
+//     POST ${API_BASE}/api/v1/debug/images
+//     X-Api-Key: ${DEVICE_API_KEY}
+//     Content-Type: image/svg+xml
+//     <svg …>…</svg>
+//
 // Wiring: RPLIDAR C1 on the AtomS3 Grove port — G1/G2 → lidar TX/RX (the two
 // are auto-swapped at boot), 5V and GND to the lidar's 5V and GND.
 
@@ -367,6 +376,103 @@ static bool reportReading(int occupied) {
   return code >= 200 && code < 300;
 }
 
+// ---------------- Debug SVG upload ----------------------------------------
+//
+// The debug app renders whatever the camera devices POST to /debug/images.
+// LiDAR has no camera, so we draw a tiny SVG sketch of the slot strip and
+// upload that at the same cadence. The backend accepts image/svg+xml and
+// serves it back with the right Content-Type; the debug app's <img> tag then
+// renders it like any other frame.
+
+static void appendSlotRects(String& svg, int viewW) {
+  const int stripY = 32, stripH = 36, stripX = 10;
+  const int stripW = viewW - 20;
+  const float slotPx = float(stripW) / SLOTS;
+  for (int s = 0; s < SLOTS; s++) {
+    const int x = stripX + int(s * slotPx);
+    const int w = int(slotPx) - 2;
+    const char* fill = slotOccupied[s] ? "#f97316" : "#166534";
+    svg += "<rect x=\"";
+    svg += x;
+    svg += "\" y=\"";
+    svg += stripY;
+    svg += "\" width=\"";
+    svg += w;
+    svg += "\" height=\"";
+    svg += stripH;
+    svg += "\" rx=\"4\" fill=\"";
+    svg += fill;
+    svg += "\"/>";
+    svg += "<text x=\"";
+    svg += x + w / 2;
+    svg += "\" y=\"";
+    svg += stripY + stripH / 2 + 4;
+    svg += "\" text-anchor=\"middle\" fill=\"#f8fafc\">";
+    if (slotEMA[s] > 0) svg += int(slotEMA[s]);
+    else                svg += "&#183;";
+    svg += "</text>";
+  }
+}
+
+static bool uploadDebugSvg(int occupiedCount) {
+  const int W = 320, H = 110;
+  String svg;
+  svg.reserve(2048);
+  svg += "<svg xmlns=\"http://www.w3.org/2000/svg\" viewBox=\"0 0 ";
+  svg += W;
+  svg += " ";
+  svg += H;
+  svg += "\" font-family=\"ui-monospace, SFMono-Regular, Menlo, monospace\" font-size=\"11\">";
+  svg += "<rect width=\"100%\" height=\"100%\" fill=\"#0b0f14\"/>";
+  svg += "<text x=\"10\" y=\"18\" fill=\"#e2e8f0\">thor &#183; ";
+  svg += occupiedCount;
+  svg += "/";
+  svg += SLOTS;
+  svg += " occupied &#183; arc ";
+  svg += int(arcStartDeg);
+  svg += "&#176;..";
+  svg += int(arcEndDeg);
+  svg += "&#176;</text>";
+  appendSlotRects(svg, W);
+  svg += "<text x=\"10\" y=\"";
+  svg += H - 8;
+  svg += "\" fill=\"#94a3b8\">seq ";
+  svg += seq;
+  svg += " &#183; fw ";
+  svg += FW_VERSION;
+  svg += " &#183; ";
+  svg += WiFi.RSSI();
+  svg += " dBm</text></svg>";
+
+  WiFiClientSecure tls;
+  tls.setInsecure();
+  HTTPClient http;
+  const String url = String(API_BASE) + "/api/v1/debug/images";
+  http.setTimeout(UPLOAD_TIMEOUT_MS);
+  http.setConnectTimeout(UPLOAD_TIMEOUT_MS);
+  if (!http.begin(tls, url)) {
+    Serial.println("[thor] debug http.begin failed");
+    return false;
+  }
+  http.addHeader("Content-Type", "image/svg+xml");
+  http.addHeader("X-Api-Key", DEVICE_API_KEY);
+  http.addHeader("X-Seq", String(seq));
+  const uint32_t started = millis();
+  const int code = http.POST(
+    reinterpret_cast<uint8_t*>(const_cast<char*>(svg.c_str())),
+    svg.length());
+  const uint32_t took = millis() - started;
+  if (code <= 0) {
+    Serial.printf("[thor] debug upload failed: %s (%u ms)\n",
+                  http.errorToString(code).c_str(), took);
+  } else {
+    Serial.printf("[thor] debug svg %u B  HTTP %d  %u ms\n",
+                  unsigned(svg.length()), code, took);
+  }
+  http.end();
+  return code >= 200 && code < 300;
+}
+
 // ---------------- Lidar frame reader + state machine -----------------------
 
 // Reads bytes from the lidar UART and fills `points`. Returns true whenever a
@@ -468,6 +574,7 @@ void loop() {
     pointCount = 0;
     if (calibrated && (millis() - lastReport) >= REPORT_INTERVAL_MS) {
       reportReading(occupied);
+      uploadDebugSvg(occupied);
       lastReport = millis();
     }
   }

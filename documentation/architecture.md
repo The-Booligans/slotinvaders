@@ -255,7 +255,7 @@ The client endpoints need no authentication. They are all read-only and return c
 | `GET /api/v1/debug/devices` | Per-device summary for the debug app: public info plus `lastSeenAt`, `stale` and `lastImage` |
 | `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | Recent log lines of one device, from an in-memory ring buffer the ingest handler writes to |
 | `GET /api/v1/debug/devices/{deviceId}/image` | The latest JPEG the device uploaded for debug viewing, or 404 if none yet |
-| `POST /api/v1/debug/images` | A device uploads its latest JPEG for the debug app. `X-Api-Key` + `Content-Type: image/jpeg`. In-memory only, never written to Cosmos. Unrelated to the plan-B `/v1/images` recognition path |
+| `POST /api/v1/debug/images` | A device uploads its latest frame for the debug app. `X-Api-Key` + `Content-Type: image/jpeg` (cameras) or `image/svg+xml` (non-image sensors send a vector sketch of what they see). In-memory only, never written to Cosmos. Unrelated to the plan-B `/v1/images` recognition path |
 
 ```json
 GET /api/v1/state

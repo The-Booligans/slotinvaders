@@ -6,18 +6,29 @@ const { imageStore: defaultImageStore } = require("./image-store");
 const { deviceLog: defaultDeviceLog } = require("./device-log");
 
 // POST /api/v1/debug/images
-//   headers: X-Api-Key (required), X-Seq (optional), Content-Type: image/jpeg
-//   body:    raw JPEG bytes
+//   headers: X-Api-Key (required), X-Seq (optional)
+//            Content-Type: image/jpeg  (camera frame)
+//                       or image/svg+xml  (non-image sensors like LiDAR send a
+//                                          vector sketch of what they see)
+//   body:    raw bytes of the chosen type
 //
 // Keeps the latest frame per device in memory and exposes it to the debug app.
 // This is separate from the counting pipeline on purpose: it doesn't care
 // about the device's `mode` and never writes to Cosmos. It is the "I want to
-// see what the camera sees" path, not the fallback cloud-recognition path.
+// see what the sensor sees" path, not the fallback cloud-recognition path.
 //
 // GET /api/v1/debug/devices/{deviceId}/image
-//   Returns the raw JPEG, or 404 if there isn't one yet.
+//   Returns the raw bytes with the stored Content-Type, or 404 if there isn't
+//   one yet.
 
-const ACCEPTED_MIME_TYPES = new Set(["image/jpeg", "image/jpg"]);
+const JPEG_MIME = "image/jpeg";
+const SVG_MIME = "image/svg+xml";
+const ACCEPTED_MIME_TYPES = new Map([
+  ["image/jpeg", JPEG_MIME],
+  ["image/jpg", JPEG_MIME],
+  ["image/svg+xml", SVG_MIME],
+  ["image/svg", SVG_MIME],
+]);
 
 function parseSeq(raw) {
   if (raw == null) return undefined;
@@ -55,8 +66,9 @@ function createDebugImageUploadHandler({
     if (!apiKey) return reply(401, { error: "missing X-Api-Key header" });
 
     const contentType = (request.headers.get("content-type") ?? "").split(";")[0].trim().toLowerCase();
-    if (!ACCEPTED_MIME_TYPES.has(contentType)) {
-      return reply(415, { error: "Content-Type must be image/jpeg" });
+    const mimeType = ACCEPTED_MIME_TYPES.get(contentType);
+    if (!mimeType) {
+      return reply(415, { error: "Content-Type must be image/jpeg or image/svg+xml" });
     }
 
     let lookup;
@@ -93,11 +105,11 @@ function createDebugImageUploadHandler({
     }
 
     const seq = parseSeq(request.headers.get("x-seq"));
-    const entry = imageStore.put(device.deviceId, { buffer, mimeType: "image/jpeg", seq });
+    const entry = imageStore.put(device.deviceId, { buffer, mimeType, seq });
     deviceLog.push(device.deviceId, {
       level: "info",
       source: "api",
-      message: `debug image seq=${entry.seq} bytes=${buffer.length}`,
+      message: `debug image seq=${entry.seq} type=${mimeType} bytes=${buffer.length}`,
     });
 
     return reply(202, {

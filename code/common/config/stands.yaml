@@ -58,15 +58,15 @@ stands:
     slots: 45
 
 devices:
-  # Kägenstrasse Hof — ToF covers the near row, LiDAR sweeps the far one.
+  # Kägenstrasse Hof — LiDAR sweeps the far row, ToF covers the near one.
   - id: thor
     stand: kaegen-hof-1
-    hardware: vl53l5cx-array
+    hardware: rplidar-c1
     mode: device
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000001"
   - id: probe
     stand: kaegen-hof-1
-    hardware: rplidar-c1
+    hardware: vl53l5cx-array
     mode: device
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000002"
 
@@ -78,7 +78,7 @@ devices:
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000003"
   - id: mule
     stand: flow-west-1
-    hardware: vl53l5cx-array
+    hardware: atoms3r-cam-m12-yolo # on-device YOLO bike detector; firmware in code/firmware/mule
     mode: device
     keyHash: "sha256:0000000000000000000000000000000000000000000000000000000000000004"
 

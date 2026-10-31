@@ -10,6 +10,7 @@ function extensionFor(mimeType: string): string {
   const subtype = mimeType.split("/")[1]?.toLowerCase();
   if (!subtype) return "bin";
   if (subtype === "jpeg") return "jpg";
+  if (subtype === "svg+xml") return "svg";
   return subtype;
 }
 

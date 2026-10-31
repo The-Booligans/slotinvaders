@@ -95,6 +95,9 @@ function fakeRequest({
 }
 
 const JPEG = Buffer.from([0xff, 0xd8, 0xff, 0xe0, 0x00, 0x10, 0x4a, 0x46, 0x49, 0x46]);
+const SVG = Buffer.from(
+  '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10"><rect width="10" height="10"/></svg>',
+);
 
 // --- POST /api/v1/debug/images ---------------------------------------------
 
@@ -152,6 +155,36 @@ test("POST /debug/images rejects a non-JPEG content type", async () => {
     t.context,
   );
   assert.equal(res.status, 415);
+});
+
+test("POST /debug/images accepts image/svg+xml for non-camera sensors", async () => {
+  const t = setup();
+  const handler = createDebugImageUploadHandler({ ...t });
+  const res = await handler(
+    fakeRequest({
+      headers: { "x-api-key": KEY, "content-type": "image/svg+xml", "x-seq": "4" },
+      body: SVG,
+    }),
+    t.context,
+  );
+  assert.equal(res.status, 202);
+  const stored = t.imageStore.get("hydra");
+  assert.ok(stored, "svg frame is stored");
+  assert.equal(stored.seq, 4);
+  assert.equal(stored.mimeType, "image/svg+xml");
+});
+
+test("GET /debug/devices/{id}/image serves SVG with the right Content-Type", async () => {
+  const t = setup();
+  t.imageStore.put("hydra", { buffer: SVG, mimeType: "image/svg+xml", seq: 5 });
+  const handler = createDebugImageFetchHandler({ imageStore: t.imageStore });
+  const res = await handler(
+    fakeRequest({ method: "GET", url: "https://api/x", params: { deviceId: "hydra" } }),
+    t.context,
+  );
+  assert.equal(res.status, 200);
+  assert.equal(res.headers["Content-Type"], "image/svg+xml");
+  assert.deepEqual(res.body, SVG);
 });
 
 test("POST /debug/images rejects an empty body", async () => {

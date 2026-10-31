@@ -58,4 +58,25 @@ describe("DeviceImage", () => {
     render(<DeviceImage summary={{ ...base, stale: true }} />);
     expect(screen.getByText("stale")).toBeDefined();
   });
+
+  it("names an SVG download with the .svg extension", () => {
+    render(
+      <DeviceImage
+        summary={{
+          ...base,
+          lastImage: {
+            deviceId: "cam-01",
+            receivedAt: new Date().toISOString(),
+            seq: 7,
+            url: "https://example.test/frame.svg",
+            mimeType: "image/svg+xml",
+          },
+        }}
+      />,
+    );
+    const download = screen.getByLabelText(
+      "Download frame #7 from cam-01",
+    ) as HTMLAnchorElement;
+    expect(download.getAttribute("download")).toBe("cam-01-7.svg");
+  });
 });

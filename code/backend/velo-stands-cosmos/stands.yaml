@@ -87,18 +87,18 @@ stands:
     # location: { lat: 0.0, lon: 0.0 }   # TODO
 
 devices:
-  # Kägenstrasse Hof — ToF covers the near row, LiDAR sweeps the far one.
+  # Kägenstrasse Hof — LiDAR sweeps the far row, ToF covers the near one.
   - id: thor
-    name: Kägenstrasse Hof – ToF, near row
+    name: Kägenstrasse Hof – LiDAR, far row
     stand: kaegen-hof-1
-    hardware: vl53l5cx-array
+    hardware: rplidar-c1
     mode: device
     status: active
     keyHash: "sha256:2402a58aea192bb6ae85d91417bb5730c773d232ba3a445a21ef08c72606b845"
   - id: probe
-    name: Kägenstrasse Hof – LiDAR, far row
+    name: Kägenstrasse Hof – ToF, near row
     stand: kaegen-hof-1
-    hardware: rplidar-c1
+    hardware: vl53l5cx-array
     mode: device
     status: active
     keyHash: "sha256:d1421a31bfee87096d7e5d3ec495d331e6ef401793b2b42023fca81ca5ec6869"
@@ -112,9 +112,9 @@ devices:
     status: active
     keyHash: "sha256:e7eba53c1cd0243c57de1c802351165d484cdd3c55979b39bc2849e7e7640241"
   - id: mule
-    name: Flowtec West – ToF
+    name: Flowtec West – on-device YOLO
     stand: flow-west-1
-    hardware: vl53l5cx-array
+    hardware: atoms3r-cam-m12-yolo # on-device YOLO bike detector; firmware in code/firmware/mule
     mode: device
     status: active
     keyHash: "sha256:1a13f32ec1c43f636419c800029c277870c4ecc2d96041f04892daae9415a357"
