@@ -8,19 +8,26 @@ import {
   walkingMinutes,
   type ParkingSpot,
 } from "@/lib/parking";
-import { BikeIcon, WalkIcon } from "./icons";
+import { rackPhotoUrl } from "@/lib/rack-photos";
+import { BikeIcon, ImageIcon, WalkIcon } from "./icons";
 
 export function RackCard({
   spot,
   at,
   selected,
+  expanded,
   onClick,
+  onShowPhoto,
 }: {
   spot: ParkingSpot;
   at: string | null;
   /** omit when the card isn't part of a selectable carousel */
   selected?: boolean;
+  /** set when the card toggles a details panel (list view) */
+  expanded?: boolean;
   onClick: () => void;
+  /** shows a photo button on the card when the rack has a photo */
+  onShowPhoto?: () => void;
 }) {
   const reported = hasData(spot);
   const percent = reported ? occupancyPercent(spot) : 0;
@@ -32,11 +39,15 @@ export function RackCard({
         ? "scale-100 shadow-lg ring-2 ring-[#2B7EB5]"
         : "scale-95 shadow-lg ring-black/5";
 
+  const showPhotoButton = onShowPhoto !== undefined && rackPhotoUrl(spot.id) !== null;
+
   return (
+    <div className="relative">
     <button
       type="button"
       onClick={onClick}
       aria-pressed={selected}
+      aria-expanded={expanded}
       className={`w-full rounded-2xl bg-white p-4 text-left ring-1 transition-all ${ring}`}
     >
       <div className="flex items-start justify-between gap-2">
@@ -84,17 +95,36 @@ export function RackCard({
         )}
       </div>
 
-      <Freshness spot={spot} at={at} />
+      <Freshness spot={spot} at={at} padRight={showPhotoButton} />
     </button>
+    {showPhotoButton && (
+      <button
+        type="button"
+        onClick={onShowPhoto}
+        aria-label={`Show photo of ${spot.name}`}
+        className="absolute bottom-2.5 right-3 grid size-8 place-items-center rounded-full bg-slate-100 text-slate-700 transition hover:text-[#2B7EB5] active:scale-95"
+      >
+        <ImageIcon className="size-4" />
+      </button>
+    )}
+    </div>
   );
 }
 
-function Freshness({ spot, at }: { spot: ParkingSpot; at: string | null }) {
+function Freshness({
+  spot,
+  at,
+  padRight,
+}: {
+  spot: ParkingSpot;
+  at: string | null;
+  padRight: boolean;
+}) {
   const age = spot.updatedAt && at ? formatAge(spot.updatedAt, at) : null;
   const [text, tone] = !spot.updatedAt
     ? ["No sensor data yet", "text-slate-400"]
     : spot.stale
       ? [`Some sensors offline · updated ${age}`, "text-amber-600"]
       : [`Updated ${age}`, "text-emerald-600"];
-  return <p className={`mt-2 truncate text-[11px] font-medium ${tone}`}>{text}</p>;
+  return <p className={`mt-2 truncate text-[11px] font-medium ${tone} ${padRight ? "pr-10" : ""}`}>{text}</p>;
 }

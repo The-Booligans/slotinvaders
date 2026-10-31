@@ -16,9 +16,16 @@ const spot = (id: string, patch: Partial<ParkingSpot> = {}): ParkingSpot => ({
   ...patch,
 });
 
-const render = (spots: ParkingSpot[], status: "live" | "offline" = "live") =>
+const render = (spots: ParkingSpot[], status: "live" | "offline" = "live", expandedId: string | null = null) =>
   renderToStaticMarkup(
-    <RacksList spots={spots} at="2026-10-31T14:50:00Z" status={status} onSelect={() => {}} />,
+    <RacksList
+      spots={spots}
+      at="2026-10-31T14:50:00Z"
+      status={status}
+      expandedId={expandedId}
+      onToggle={() => {}}
+      onShowOnMap={() => {}}
+    />,
   );
 
 describe("RacksList", () => {
@@ -41,6 +48,29 @@ describe("RacksList", () => {
     const html = render([spot("a")]);
     expect(html).not.toContain("aria-pressed");
     expect(html).not.toContain("scale-95");
+  });
+
+  it("expands only the chosen entry with its photo and a map button", () => {
+    const html = render([spot("flow-main"), spot("flow-se")], "live", "flow-main");
+    expect(html.match(/aria-expanded="true"/g)).toHaveLength(1);
+    expect(html).toContain('src="/racks/flow-main.webp"');
+    expect(html).not.toContain("/racks/flow-se.webp");
+    expect(html).toContain("Show on map");
+  });
+
+  it("collapses entries by default", () => {
+    const html = render([spot("flow-main")]);
+    expect(html).toContain('aria-expanded="false"');
+    expect(html).not.toContain("<img");
+  });
+
+  it("omits the map button for a rack without a position", () => {
+    const html = render([spot("flow-main", { position: null })], "live", "flow-main");
+    expect(html).not.toContain("Show on map");
+  });
+
+  it("explains when a rack has no photo", () => {
+    expect(render([spot("unknown")], "live", "unknown")).toContain("No photo available yet");
   });
 
   it("shows a waiting hint before data arrives", () => {

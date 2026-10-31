@@ -12,12 +12,13 @@ interface NearbyRacksProps {
   status: LiveStatus;
   selectedId: string | null;
   onSelect: (id: string) => void;
+  onShowPhoto: (id: string) => void;
 }
 
 // wait for scrolling to settle before picking the centred card
 const SCROLL_SETTLE_MS = 120;
 
-export function NearbyRacks({ spots, at, status, selectedId, onSelect }: NearbyRacksProps) {
+export function NearbyRacks({ spots, at, status, selectedId, onSelect, onShowPhoto }: NearbyRacksProps) {
   const listRef = useRef<HTMLUListElement>(null);
   const settleTimer = useRef<ReturnType<typeof setTimeout>>(undefined);
 
@@ -60,6 +61,7 @@ export function NearbyRacks({ spots, at, status, selectedId, onSelect }: NearbyR
               at={at}
               selected={spot.id === selectedId}
               onClick={() => onSelect(spot.id)}
+              onShowPhoto={() => onShowPhoto(spot.id)}
             />
           </li>
         ))}
