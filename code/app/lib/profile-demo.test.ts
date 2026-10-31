@@ -58,6 +58,12 @@ describe("DEMO_PROFILE", () => {
     expect(leaderboardRank(DEMO_PROFILE.leaderboard)).toBe(5);
   });
 
+  it("ranks the Booligans team around the user", () => {
+    const names = DEMO_PROFILE.leaderboard.filter((e) => !e.isYou).map((e) => e.name);
+    expect(names).toHaveLength(7);
+    expect(names).toContain("Artur Semenenko");
+  });
+
   it("has at most 5 bike days per work week", () => {
     expect(DEMO_PROFILE.weeklyBikeDays.every((d) => d >= 0 && d <= 5)).toBe(true);
   });

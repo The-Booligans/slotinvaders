@@ -5,7 +5,7 @@ import {
   leaderboardRank,
   topPercent,
 } from "@/lib/profile-demo";
-import { BikeIcon, ShieldIcon, UserIcon } from "./icons";
+import { ShieldIcon, UserIcon } from "./icons";
 
 const CARD = "rounded-2xl bg-white p-4 shadow-sm ring-1 ring-black/5";
 const BRAND = "#2B7EB5";
@@ -33,6 +33,10 @@ function GuestCard() {
       <div>
         <h2 className="font-semibold text-slate-900">Guest</h2>
         <p className="text-sm text-slate-500">No account needed to find a slot.</p>
+        <p className="mt-1 text-sm font-medium text-orange-600">
+          🔥 {DEMO_PROFILE.streakDays}-day streak{" "}
+          <span className="text-xs font-normal text-slate-400">· preview</span>
+        </p>
       </div>
     </section>
   );
@@ -67,16 +71,7 @@ function DemoProfile() {
   const rank = leaderboardRank(p.leaderboard) ?? p.leaderboard.length;
 
   return (
-    <div aria-label="Sample rider profile" className="flex flex-col gap-4">
-      <section className={`flex items-center gap-4 ${CARD}`}>
-        <DemoAvatar />
-        <div className="min-w-0">
-          <h2 className="font-semibold text-slate-900">{p.name}</h2>
-          <p className="text-sm text-slate-500">Riding since {p.memberSince}</p>
-          <p className="mt-1 text-sm font-medium text-orange-600">🔥 {p.streakDays}-day streak</p>
-        </div>
-      </section>
-
+    <div aria-label="Sample rider stats" className="flex flex-col gap-4">
       <section className="grid grid-cols-2 gap-3">
         <Stat value={String(p.totalRides)} label="Rides since joining" />
         <Stat value={`${averageDaysPerWeek(p.weeklyBikeDays)}`} label="Bike days / week (avg)" />
@@ -87,32 +82,6 @@ function DemoProfile() {
       <WeeklyChart weeks={p.weeklyBikeDays} />
       <Leaderboard />
       <Badges />
-    </div>
-  );
-}
-
-function DemoAvatar() {
-  return (
-    <div className="relative shrink-0">
-      <svg viewBox="0 0 56 56" className="size-14 rounded-full" role="img" aria-label="Sample avatar">
-        <defs>
-          <linearGradient id="avatar-bg" x1="0" y1="0" x2="1" y2="1">
-            <stop offset="0" stopColor="#7DD3FC" />
-            <stop offset="1" stopColor={BRAND} />
-          </linearGradient>
-        </defs>
-        <rect width="56" height="56" fill="url(#avatar-bg)" />
-        <path d="M10 56c2-11 9-16 18-16s16 5 18 16Z" fill="#F97316" />
-        <circle cx="28" cy="25" r="10" fill="#FCD9B6" />
-        <path d="M17 23a11 11 0 0 1 22 0v1H17Z" fill="#334155" />
-        <rect x="16" y="22" width="24" height="3" rx="1.5" fill="#1E293B" />
-        <circle cx="24.5" cy="27" r="1.2" fill="#1E293B" />
-        <circle cx="31.5" cy="27" r="1.2" fill="#1E293B" />
-        <path d="M24.5 31q3.5 2.5 7 0" stroke="#1E293B" strokeWidth="1.2" fill="none" strokeLinecap="round" />
-      </svg>
-      <span className="absolute -right-1 -bottom-1 grid size-6 place-items-center rounded-full bg-white text-[#2B7EB5] shadow ring-1 ring-black/5">
-        <BikeIcon className="size-4" />
-      </span>
     </div>
   );
 }

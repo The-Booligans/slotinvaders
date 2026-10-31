@@ -3,8 +3,6 @@
 export type LeaderboardEntry = { name: string; rides: number; isYou?: boolean };
 
 export type DemoProfile = {
-  name: string;
-  memberSince: string;
   totalRides: number;
   kmPerRide: number;
   streakDays: number;
@@ -16,19 +14,20 @@ export type DemoProfile = {
 };
 
 export const DEMO_PROFILE: DemoProfile = {
-  name: "Alex Rider",
-  memberSince: "March 2026",
   totalRides: 142,
   kmPerRide: 4.2,
   streakDays: 9,
   weeklyBikeDays: [3, 4, 2, 5, 4, 3, 4, 5],
   registeredRiders: 312,
   leaderboard: [
-    { name: "Sam K.", rides: 201 },
-    { name: "Mia L.", rides: 188 },
-    { name: "Jonas B.", rides: 171 },
-    { name: "Lea W.", rides: 150 },
-    { name: "Alex R.", rides: 142, isYou: true },
+    { name: "Valentino Rusconi", rides: 213 },
+    { name: "Dobrawa Kiefer", rides: 198 },
+    { name: "Luca Rullo", rides: 176 },
+    { name: "Samuel Rink", rides: 157 },
+    { name: "You", rides: 142, isYou: true },
+    { name: "Nila M.", rides: 131 },
+    { name: "David Übelacker", rides: 118 },
+    { name: "Artur Semenenko", rides: 96 },
   ],
   badges: [
     { label: "First ride", emoji: "🚲", earned: true },
