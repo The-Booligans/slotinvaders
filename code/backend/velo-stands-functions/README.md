@@ -41,11 +41,16 @@ Two devices in the same area can send at the same moment. The area document is t
 
 | File | |
 |---|---|
-| `src/functions/readings.js` | Registers the HTTP function `POST /api/v1/readings` |
+| `src/functions/readings.js` | Registers `POST /api/v1/readings` |
+| `src/functions/config.js` | Registers `GET /api/v1/config` |
+| `src/functions/debug.js` | Registers `GET /api/v1/debug/devices` and `GET /api/v1/debug/devices/{deviceId}/logs` |
 | `src/lib/ingest.js` | The request flow and the log output |
+| `src/lib/debug.js` | Public config and debug handlers |
 | `src/lib/catalog.js` | Catalog cache and key check (SHA-256, compared in constant time) |
 | `src/lib/occupancy.js` | Stand totals and free slots |
 | `src/lib/validate.js` | Body checks |
+| `src/lib/device-log.js` | Per-device in-memory ring buffer for the debug endpoint |
+| `src/lib/http.js` | Shared reply builder and CORS preflight |
 | `src/lib/cosmos.js` | Cosmos DB client (managed identity in Azure, `az login` locally) |
 | `function.bicep` | Function App, Consumption plan, storage, Application Insights, Cosmos DB access |
 | `deploy-function.ps1` | Creates the Azure resources and deploys the code |
@@ -129,6 +134,24 @@ copy local.settings.sample.json local.settings.json   # set COSMOS_ENDPOINT
 az login                                              # your account needs data access, see deploy-cosmos.ps1 -Grant
 func start
 ./scripts/send-test-reading.ps1 -Url http://localhost:7071/api/v1/readings -Key <key> -Occupied 3
+```
+
+## Client and debug endpoints
+
+Three GET endpoints are anonymous and read-only. They share a wide-open CORS header, so the debug app can call them from a browser tab on a different port.
+
+| Endpoint | Returns |
+|---|---|
+| `GET /api/v1/config` | The public config: `site`, `areas`, `stands` and `devices`. `keyHash` is never included; retired stands and devices are left out. |
+| `GET /api/v1/debug/devices` | For each active device: its public info plus `lastSeenAt` and `stale` from the state container. `lastImage` is always `null` until `POST /api/v1/images` is in place. |
+| `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | The recent log lines for one device, newest last. |
+
+The log entries come from an in-memory ring buffer the ingest handler writes to (200 lines per device, override with `DEVICE_LOG_MAX`). The buffer is per Function instance, so it resets when the app scales or restarts; the authoritative log still lives in Application Insights. `limit` is capped at the buffer size.
+
+The debug app (`code/debug`) is wired to these three endpoints:
+
+```
+NEXT_PUBLIC_API_URL=http://localhost:7071 pnpm --filter code/debug dev
 ```
 
 ## Not in here yet

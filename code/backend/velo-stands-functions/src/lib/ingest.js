@@ -4,6 +4,8 @@ const crypto = require("node:crypto");
 const { hashKey } = require("./catalog");
 const { validateReading } = require("./validate");
 const { computeStand, describeParts } = require("./occupancy");
+const { reply: httpReply } = require("./http");
+const { deviceLog: defaultDeviceLog } = require("./device-log");
 
 // POST /api/v1/readings
 //
@@ -18,21 +20,34 @@ const { computeStand, describeParts } = require("./occupancy");
 const RATE_LIMIT_MS = 5_000; // at most one request per device every 5 s
 const MAX_STATE_ATTEMPTS = 5; // retries when two devices of an area write at the same time
 
-function createLogger(context, verbose) {
+function createLogger(context, verbose, { deviceLog, getDeviceId }) {
   const tag = `[readings ${String(context.invocationId ?? "local").slice(0, 8)}]`;
+  const record = (level, message) => {
+    const deviceId = getDeviceId();
+    if (deviceId) deviceLog.push(deviceId, { level, source: "api", message });
+  };
   return {
     step: (message) => {
       if (verbose) context.log(`${tag} ${message}`);
+      record("debug", message);
     },
-    info: (message) => context.log(`${tag} ${message}`),
-    warn: (message) => context.warn(`${tag} ${message}`),
-    error: (message, err) => context.error(`${tag} ${message}${err ? `: ${err.message ?? err}` : ""}`),
+    info: (message) => {
+      context.log(`${tag} ${message}`);
+      record("info", message);
+    },
+    warn: (message) => {
+      context.warn(`${tag} ${message}`);
+      record("warn", message);
+    },
+    error: (message, err) => {
+      const full = `${message}${err ? `: ${err.message ?? err}` : ""}`;
+      context.error(`${tag} ${full}`);
+      record("error", full);
+    },
   };
 }
 
-function reply(status, body, extraHeaders = {}) {
-  return { status, jsonBody: body, headers: { "Cache-Control": "no-store", ...extraHeaders } };
-}
+const reply = httpReply;
 
 const round = (n) => Math.round(n * 100) / 100;
 
@@ -43,10 +58,20 @@ const round = (n) => Math.round(n * 100) / 100;
  * @param {() => Date} [deps.now]
  * @param {boolean} [deps.verbose]
  */
-function createReadingsHandler({ catalogCache, containers, now = () => new Date(), verbose = true }) {
+function createReadingsHandler({
+  catalogCache,
+  containers,
+  now = () => new Date(),
+  verbose = true,
+  deviceLog = defaultDeviceLog,
+}) {
   return async function handleReading(request, context) {
     const started = Date.now();
-    const log = createLogger(context, verbose);
+    let currentDeviceId = null;
+    const log = createLogger(context, verbose, {
+      deviceLog,
+      getDeviceId: () => currentDeviceId,
+    });
     const receivedAt = now();
     const clientIp = (request.headers.get("x-forwarded-for") ?? "unknown").split(",")[0].trim().replace(/^(\d+\.\d+\.\d+\.\d+):\d+$/, "$1");
     let ru = 0;
@@ -99,8 +124,10 @@ function createReadingsHandler({ catalogCache, containers, now = () => new Date(
 
     if (!device || device.status === "retired") {
       const why = device ? `device ${device.deviceId} is retired` : `unknown key (hash ${keyHash.slice(0, 15)}...)`;
+      if (device) currentDeviceId = device.deviceId;
       return finish(reply(401, { error: "unknown or revoked API key" }), why);
     }
+    currentDeviceId = device.deviceId;
     if (device.status === "maintenance") {
       return finish(reply(403, { error: "device is in maintenance" }), `device ${device.deviceId} is in maintenance`);
     }

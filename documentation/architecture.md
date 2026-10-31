@@ -243,6 +243,8 @@ The client endpoints need no authentication. They are all read-only and return c
 | `GET /api/v1/config` | The public config, without key hashes |
 | `POST /api/v1/negotiate` | `{ url }`, a short-lived Web PubSub URL that can only receive |
 | `GET /api/v1/history?stand=…&from=…&to=…` | The stand's readings, oldest first |
+| `GET /api/v1/debug/devices` | Per-device summary for the debug app: public info plus `lastSeenAt`, `stale` and (once images are in) `lastImage` |
+| `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | Recent log lines of one device, from an in-memory ring buffer the ingest handler writes to |
 
 ```json
 GET /api/v1/state
