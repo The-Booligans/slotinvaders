@@ -92,6 +92,23 @@ Following the [BaselHack repo template](https://github.com/BaselHack/baselhack_r
 Sensor spikes live under `code/firmware/experiments/<sensor>/` so results can
 be reproduced.
 
+## Run the app
+
+1. Open a terminal in `code/app` and install dependencies once:
+   `pnpm install`
+2. Run the web app locally:
+   `pnpm run dev`
+   Then open `http://localhost:3000`.
+3. To run it on Android, build the static web app and sync it into the native
+   project:
+   `pnpm run build`
+   `pnpm exec cap sync android`
+4. Open `code/app/android` in Android Studio (or run `pnpm exec cap open android`
+   from `code/app`).
+5. Select an emulator or connected Android device, then click **Run**.
+
+After changing app code, repeat steps 3–5 so Android gets the latest build.
+
 ## Stack
 
 - **Front ends** — Next.js (static export) · Serwist (PWA) · Capacitor (iOS/Android) · shadcn/ui · Tailwind · three.js + R3F

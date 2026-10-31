@@ -1,5 +1,7 @@
 packages:
-  - apps/*
-  - packages/*
+  - "."
+  - "../common/campus-map"
+minimumReleaseAgeExclude:
+  - "@types/three@0.187.0"
 allowBuilds:
   unrs-resolver: true
