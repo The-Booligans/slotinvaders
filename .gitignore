@@ -5,3 +5,15 @@ node_modules
 code/backend/velo-stands-functions/package-lock.json
 
 .cache
+
+# macOS Finder metadata
+.DS_Store
+
+# Next.js build output (anywhere in the tree)
+.next/
+
+# Xcode's local SwiftPM dependency resolution
+**/xcshareddata/swiftpm/
+
+# Scratch QR renders
+teqr.png
