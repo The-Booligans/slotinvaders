@@ -5,7 +5,7 @@
 //   { "occupied": 9, "seq": 1842, "measuredAt": "2026-10-31T07:42:10Z", "fw": "0.3.1", "rssi": -61 }
 //
 // occupied and seq are required. Unknown fields are refused, so the body can
-// never carry anything else (images go through /images, which never stores them).
+// never carry anything else.
 
 const ALLOWED_FIELDS = new Set(["occupied", "seq", "measuredAt", "fw", "rssi"]);
 

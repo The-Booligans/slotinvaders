@@ -3,3 +3,5 @@ node_modules
 # Device API keys — only sha256 hashes go in the repo (see stands.yaml).
 *.secret.yaml
 code/backend/velo-stands-functions/package-lock.json
+
+.cache

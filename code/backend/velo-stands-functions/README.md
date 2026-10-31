@@ -31,7 +31,7 @@ Content-Type: application/json
 | 400 | The body isn't valid JSON |
 | 401 | The key is missing, unknown or belongs to a retired device |
 | 403 | The device is in `maintenance` |
-| 409 | The device sends images (`mode: cloud`), has no open assignment, or its stand is retired |
+| 409 | The device has no open assignment, or its stand is retired |
 | 422 | Invalid body: a missing or negative count, more than the stand's slots, or an unknown field |
 | 429 | More than one reading from the same device within 2 s |
 | 503 | Cosmos DB couldn't be reached. The device simply sends again next cycle. |
@@ -228,7 +228,7 @@ Three GET endpoints are anonymous and read-only. They share a wide-open CORS hea
 | Endpoint | Returns |
 |---|---|
 | `GET /api/v1/config` | The public config: `site`, `areas`, `stands` and `devices`. `keyHash` is never included; retired stands and devices are left out. |
-| `GET /api/v1/debug/devices` | For each active device: its public info plus `lastSeenAt` and `stale` from the state container. `lastImage` is always `null` until `POST /api/v1/images` is in place. |
+| `GET /api/v1/debug/devices` | For each active device: its public info plus `lastSeenAt`, `stale` and `lastImage` (from `POST /api/v1/debug/images`, in-memory only). |
 | `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | The recent log lines for one device, newest last. |
 
 The log entries come from an in-memory ring buffer the ingest handler writes to (200 lines per device, override with `DEVICE_LOG_MAX`). The buffer is per Function instance, so it resets when the app scales or restarts; the authoritative log still lives in Application Insights. `limit` is capped at the buffer size.
@@ -241,5 +241,4 @@ NEXT_PUBLIC_API_URL=http://localhost:7071 pnpm --filter code/debug dev
 
 ## Not in here yet
 
-- `POST /api/v1/images` for cloud-counting devices (`drone`).
 - The hourly rollup job for weekday trends.

@@ -3,9 +3,9 @@
 // On boot:
 //   1. Join Wi-Fi.
 //   2. Fetch the device config from GET /api/v1/device/config so the number
-//      of slot bays, the occupied/free thresholds, the EMA alpha and the
-//      report interval all come from the backend. Compile-time defaults are
-//      used if the fetch fails.
+//      of slot bays, the free threshold, the EMA alpha and the report
+//      interval all come from the backend. Compile-time defaults are used
+//      if the fetch fails.
 //   3. Scan the full 360° arc for ~calibrationMs, build a per-bin histogram
 //      of returns, and pick the longest contiguous arc whose bins consistently
 //      see a return in a bike-plausible range. That is the stand direction,
@@ -14,9 +14,10 @@
 //
 // Then forever:
 //   For every full lidar rotation, update an EMA of the nearest return per
-//   slot. Hysteresis thresholds classify each slot as occupied or free, and
-//   the aggregate occupied count is POSTed to the backend every
-//   reportIntervalMs as a normal reading:
+//   slot. A single freeMm threshold inside the bike range classifies each
+//   slot as occupied (< freeMm) or free (>= freeMm); stableLatch filters
+//   single-scan noise. The aggregate occupied count is POSTed to the
+//   backend every reportIntervalMs as a normal reading:
 //
 //     POST ${API_BASE}/api/v1/readings
 //     X-Api-Key: ${DEVICE_API_KEY}
@@ -56,7 +57,6 @@ static constexpr uint32_t  DEFAULT_REPORT_INTERVAL_MS = 10000;
 static constexpr uint32_t  DEFAULT_CALIBRATION_MS     = 8000;
 static constexpr float     DEFAULT_BIKE_RANGE_MIN_MM  = 250.f;
 static constexpr float     DEFAULT_BIKE_RANGE_MAX_MM  = 1800.f;
-static constexpr float     DEFAULT_OCCUPIED_MM        = 650.f;
 static constexpr float     DEFAULT_FREE_MM            = 850.f;
 static constexpr float     DEFAULT_EMA_ALPHA          = 0.3f;
 static constexpr int       DEFAULT_SLOTS              = 8;
@@ -67,7 +67,6 @@ static uint32_t reportIntervalMs = DEFAULT_REPORT_INTERVAL_MS;
 static uint32_t calibrationMs    = DEFAULT_CALIBRATION_MS;
 static float    bikeRangeMinMm   = DEFAULT_BIKE_RANGE_MIN_MM;
 static float    bikeRangeMaxMm   = DEFAULT_BIKE_RANGE_MAX_MM;
-static float    occupiedMm       = DEFAULT_OCCUPIED_MM;
 static float    freeMm           = DEFAULT_FREE_MM;
 static float    emaAlpha         = DEFAULT_EMA_ALPHA;
 static int      slots            = DEFAULT_SLOTS;
@@ -290,8 +289,9 @@ static int classifyScan() {
     }
     const bool wasOccupied = slotOccupied[s];
     bool want = wasOccupied;
-    if (slotEMA[s] > 0 && slotEMA[s] <= occupiedMm) want = true;
-    else if (slotEMA[s] >= freeMm) want = false;
+    if (slotEMA[s] >= bikeRangeMinMm && slotEMA[s] < freeMm) want = true;
+    else if (slotEMA[s] >= freeMm && slotEMA[s] <= bikeRangeMaxMm) want = false;
+    // outside the plausible bike range: keep previous state
     if (want != wasOccupied) {
       slotStable[s]++;
       if (slotStable[s] >= stableLatch) {
@@ -340,7 +340,7 @@ static void renderSlots(int occupiedCount) {
 //
 //   { "device":"thor", "stand":"kaegen-hof-1", "slots":40,
 //     "reportIntervalSeconds":60,
-//     "config": { "slots":8, "occupiedMm":650, "freeMm":850, ... } }
+//     "config": { "slots":8, "freeMm":850, ... } }
 //
 // Only the keys we recognise are read. Missing keys keep their default. The
 // payload is small (< 300 B), so a handrolled scanner is enough — no need to
@@ -445,7 +445,6 @@ static bool fetchConfig() {
     return true;
   }
   applyConfigNumber(cfg, "slots",            slots,            1, MAX_SLOTS);
-  applyConfigNumber(cfg, "occupiedMm",       occupiedMm,       50.f, 10000.f);
   applyConfigNumber(cfg, "freeMm",           freeMm,           50.f, 10000.f);
   applyConfigNumber(cfg, "bikeRangeMinMm",   bikeRangeMinMm,   10.f, 10000.f);
   applyConfigNumber(cfg, "bikeRangeMaxMm",   bikeRangeMaxMm,   10.f, 20000.f);
@@ -454,15 +453,14 @@ static bool fetchConfig() {
   applyConfigNumber(cfg, "calibrationMs",    calibrationMs,    1000U, 60000U);
   applyConfigNumber(cfg, "reportIntervalMs", reportIntervalMs, 1000U, 600000U);
 
-  if (occupiedMm >= freeMm) {
-    Serial.printf("[thor] config refused: occupiedMm (%.0f) must be below freeMm (%.0f) — reverting both\n",
-                  occupiedMm, freeMm);
-    occupiedMm = DEFAULT_OCCUPIED_MM;
-    freeMm     = DEFAULT_FREE_MM;
+  if (freeMm <= bikeRangeMinMm || freeMm >= bikeRangeMaxMm) {
+    Serial.printf("[thor] config refused: freeMm (%.0f) must sit inside bikeRange (%.0f..%.0f) — reverting freeMm\n",
+                  freeMm, bikeRangeMinMm, bikeRangeMaxMm);
+    freeMm = DEFAULT_FREE_MM;
   }
-  Serial.printf("[thor] config: slots=%d occupied<=%.0f free>=%.0f ema=%.2f latch=%d "
+  Serial.printf("[thor] config: slots=%d free>=%.0f ema=%.2f latch=%d "
                 "range=%.0f..%.0f calib=%ums report=%ums\n",
-                slots, occupiedMm, freeMm, emaAlpha, stableLatch,
+                slots, freeMm, emaAlpha, stableLatch,
                 bikeRangeMinMm, bikeRangeMaxMm,
                 unsigned(calibrationMs), unsigned(reportIntervalMs));
   return true;

@@ -662,7 +662,7 @@ export default function Page() {
             <div className="privacy-grid">
               <div className="privacy-block">
                 <h3>
-                  <span className="label">Plan A</span> Counting without cameras
+                  <span className="label">On the device</span> Counting without cameras
                 </h3>
                 <p>
                   Non-image sensors (ToF arrays, LiDAR, mmWave radar, ultrasonic) or on-device CV.
@@ -672,12 +672,12 @@ export default function Page() {
               </div>
               <div className="privacy-block">
                 <h3>
-                  <span className="label">Plan B</span> Fallback with camera
+                  <span className="label">On the wire</span> No image endpoint
                 </h3>
                 <p>
-                  Only where no sensor configuration clears the bar. The image is counted by Azure
-                  AI Vision and dropped from memory in the same call. The code path exists as a
-                  safety net, not as the target.
+                  The backend accepts counts, not pictures. There is no code path that uploads a
+                  frame for recognition, so even a compromised device cannot send one somewhere it
+                  would be stored or seen.
                 </p>
               </div>
             </div>

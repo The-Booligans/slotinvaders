@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-export const DeviceMode = z.enum(["device", "cloud"]);
+export const DeviceMode = z.enum(["device"]);
 export type DeviceMode = z.infer<typeof DeviceMode>;
 
 export const Device = z.object({
@@ -42,7 +42,7 @@ export const LogEntry = z.object({
   at: z.string(),
   deviceId: z.string(),
   level: LogLevel,
-  source: z.enum(["device", "cloud", "api"]).default("api"),
+  source: z.enum(["device", "api"]).default("api"),
   message: z.string(),
   context: z.record(z.string(), z.unknown()).optional(),
 });
@@ -52,9 +52,7 @@ export const DebugImage = z.object({
   deviceId: z.string(),
   receivedAt: z.string(),
   seq: z.number().int().nonnegative(),
-  occupied: z.number().int().nonnegative().optional(),
   deviceCount: z.number().int().nonnegative().optional(),
-  meanConfidence: z.number().min(0).max(1).optional(),
   url: z.string(),
   mimeType: z.string().default("image/jpeg"),
   width: z.number().int().positive().optional(),

@@ -23,7 +23,6 @@ export function DeviceImage({ summary }: { summary: DebugDeviceSummary }) {
         <div className="flex items-center justify-between gap-2">
           <CardTitle className="font-mono text-sm">{device.id}</CardTitle>
           <div className="flex items-center gap-1">
-            <Badge variant={device.mode === "cloud" ? "info" : "muted"}>{device.mode}</Badge>
             {stale ? <Badge variant="warning">stale</Badge> : <Badge variant="success">live</Badge>}
           </div>
         </div>
@@ -55,9 +54,7 @@ export function DeviceImage({ summary }: { summary: DebugDeviceSummary }) {
           ) : (
             <div className="flex h-full w-full flex-col items-center justify-center gap-2 text-[var(--color-muted-foreground)]">
               <Camera className="h-6 w-6" />
-              <p className="text-xs">
-                {device.mode === "device" ? "device-mode: no image uploaded" : "no image yet"}
-              </p>
+              <p className="text-xs">no image uploaded</p>
             </div>
           )}
         </div>
@@ -67,24 +64,10 @@ export function DeviceImage({ summary }: { summary: DebugDeviceSummary }) {
             <dd className="text-right font-mono">{relativeTime(lastImage.receivedAt)}</dd>
             <dt className="text-[var(--color-muted-foreground)]">seq</dt>
             <dd className="text-right font-mono">#{lastImage.seq}</dd>
-            {typeof lastImage.occupied === "number" && (
-              <>
-                <dt className="text-[var(--color-muted-foreground)]">cloud count</dt>
-                <dd className="text-right font-mono">{lastImage.occupied}</dd>
-              </>
-            )}
             {typeof lastImage.deviceCount === "number" && (
               <>
                 <dt className="text-[var(--color-muted-foreground)]">device count</dt>
                 <dd className="text-right font-mono">{lastImage.deviceCount}</dd>
-              </>
-            )}
-            {typeof lastImage.meanConfidence === "number" && (
-              <>
-                <dt className="text-[var(--color-muted-foreground)]">mean conf.</dt>
-                <dd className="text-right font-mono">
-                  {(lastImage.meanConfidence * 100).toFixed(1)}%
-                </dd>
               </>
             )}
           </dl>

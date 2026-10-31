@@ -34,13 +34,13 @@ devices:
   - id: cam-01
     name: FSW-1 left half
     hardware: esp32-cam
-    mode: device                 # device: sends a count · cloud: sends an image
+    mode: device                 # devices count locally and POST the integer
     keyHash: "sha256:replace-with-hash-of-cam-01"
     status: active               # active | maintenance | retired
   - id: cam-02
     name: FSW-1 right half
     hardware: esp32-s3-cam
-    mode: cloud
+    mode: device
     keyHash: "sha256:replace-with-hash-of-cam-02"
     status: active
 
@@ -56,11 +56,6 @@ assignments:
 #     - { device: cam-01, stand: fsw-1, from: 2026-10-31, to: 2027-03-14 }
 #     - { device: cam-03, stand: fsw-1, from: 2027-03-14 }
 # Then run the sync again. It also removes cam-01 from the stand's live state.
-
-recognition:
-  model: azure-ai-vision
-  label: bicycle
-  minConfidence: 0.5
 
 settings:
   staleAfterSeconds: 300

@@ -21,7 +21,7 @@ describe("DeviceImage", () => {
 
   it("renders a placeholder when there is no image", () => {
     render(<DeviceImage summary={base} />);
-    expect(screen.getByText(/device-mode: no image uploaded/)).toBeDefined();
+    expect(screen.getByText(/no image uploaded/)).toBeDefined();
   });
 
   it("renders the image and metadata when provided", () => {
@@ -29,14 +29,11 @@ describe("DeviceImage", () => {
       <DeviceImage
         summary={{
           ...base,
-          device: { ...base.device, mode: "cloud" },
           lastImage: {
             deviceId: "cam-01",
             receivedAt: new Date().toISOString(),
             seq: 123,
-            occupied: 8,
             deviceCount: 9,
-            meanConfidence: 0.87,
             url: "https://example.test/frame.jpg",
             mimeType: "image/jpeg",
           },
@@ -46,7 +43,7 @@ describe("DeviceImage", () => {
     const img = screen.getByAltText("Last frame from cam-01") as HTMLImageElement;
     expect(img.src).toBe("https://example.test/frame.jpg");
     expect(screen.getByText("#123")).toBeDefined();
-    expect(screen.getByText("87.0%")).toBeDefined();
+    expect(screen.getByText("9")).toBeDefined();
     const download = screen.getByLabelText("Download frame #123 from cam-01") as HTMLAnchorElement;
     expect(download.href).toBe("https://example.test/frame.jpg");
     expect(download.getAttribute("download")).toBe("cam-01-123.jpg");

@@ -48,12 +48,12 @@ function fakeContainer(initial = []) {
   return container;
 }
 
-const KEYS = { thor: "vs_thor", probe: "vs_probe", drone: "vs_drone", lonely: "vs_lonely", oldie: "vs_oldie", fixme: "vs_fixme" };
+const KEYS = { thor: "vs_thor", probe: "vs_probe", lonely: "vs_lonely", oldie: "vs_oldie", fixme: "vs_fixme" };
 
 function catalogDocs() {
-  const device = (deviceId, mode = "device", status = "active") => ({
+  const device = (deviceId, status = "active") => ({
     id: `device:${deviceId}`, type: "device", siteId: "reinach", deviceId, name: `${deviceId} test`,
-    hardware: "vl53l5cx-array", mode, status, keyHash: hashKey(KEYS[deviceId]),
+    hardware: "vl53l5cx-array", mode: "device", status, keyHash: hashKey(KEYS[deviceId]),
   });
   const assignment = (deviceId, standId, validTo = null) => ({
     id: `assignment:${deviceId}`, type: "assignment", siteId: "reinach", deviceId, standId, areaId: "kaegen-hof",
@@ -64,8 +64,8 @@ function catalogDocs() {
     { id: "area:kaegen-hof", type: "area", siteId: "reinach", areaId: "kaegen-hof", name: "Kägenstrasse 2 – Hof", kind: "open" },
     { id: "stand:kaegen-hof-1", type: "stand", siteId: "reinach", standId: "kaegen-hof-1", areaId: "kaegen-hof", name: "Kägenstrasse 2 – Hof, Stand 1", slots: 40 },
     { id: "stand:kaegen-hof-2", type: "stand", siteId: "reinach", standId: "kaegen-hof-2", areaId: "kaegen-hof", name: "Kägenstrasse 2 – Hof, Stand 2", slots: 10 },
-    device("thor"), device("probe"), device("drone", "cloud"), device("lonely"), device("oldie", "device", "retired"), device("fixme", "device", "maintenance"),
-    assignment("thor", "kaegen-hof-1"), assignment("probe", "kaegen-hof-1"), assignment("drone", "kaegen-hof-2"),
+    device("thor"), device("probe"), device("lonely"), device("oldie", "retired"), device("fixme", "maintenance"),
+    assignment("thor", "kaegen-hof-1"), assignment("probe", "kaegen-hof-1"),
     assignment("oldie", "kaegen-hof-1", "2026-11-01T00:00:00.000Z"), assignment("fixme", "kaegen-hof-2"),
   ];
 }
@@ -147,9 +147,8 @@ test("missing, unknown, retired and maintenance keys are refused", async () => {
   assert.equal(t.readings.docs.size, 0);
 });
 
-test("a cloud device and an unassigned device get 409", async () => {
+test("an unassigned device gets 409", async () => {
   const t = setup();
-  assert.equal((await t.send(KEYS.drone, { occupied: 1, seq: 1 })).status, 409);
   assert.equal((await t.send(KEYS.lonely, { occupied: 1, seq: 1 })).status, 409);
 });
 

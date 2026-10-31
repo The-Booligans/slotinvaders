@@ -8,13 +8,11 @@ Devices at each bike stand count the bikes they see and report the number — ne
 
 ## Privacy stance: no images leave the stand
 
-This is a privacy-by-design challenge. Our plan A is to count **without ever sending an image off the device**:
+This is a privacy-by-design challenge. We count **without ever sending an image off the device**:
 
 - Each device turns its raw signal (depth map, point cloud, ToF ranges, on-board inference) into one integer: the number of bikes it currently sees.
 - Only that integer, plus a few housekeeping fields, reaches the backend.
-- There is no cloud image endpoint on the happy path. The sensor and the firmware are the whole pipeline.
-
-**Plan B — cloud image recognition — is a fallback.** If no sensor configuration we can source, mount and tune in the time available counts reliably enough, we fall back to uploading a cropped JPEG for Azure AI Vision to count, and dropping the frame immediately. The code path and schema for this exist, but it is explicitly a fallback, not the target architecture.
+- There is no cloud image endpoint. The sensor and the firmware are the whole pipeline.
 
 See [sensor-evaluation.md](sensor-evaluation.md) for the sensors we test and the numbers we measure.
 
@@ -31,11 +29,9 @@ The first version only covers the API, the shared contracts, the tools and an un
 | Config | YAML in the repo, validated with Zod in CI. |
 | Stands | A stand has a number of slots and any number of devices. Each device sends the number of bikes it sees. Free slots = slots − the sum of all its devices' counts. |
 | Devices | Devices on one stand never watch the same bikes. There are no slot ranges, no voting and no estimates for unwatched places. |
-| Counting (plan A) | On the device, from a non-image sensor. The firmware is the whole pipeline; only the integer count leaves the stand. |
-| Counting (plan B) | Fallback for stands where no sensor configuration works in time: upload a cropped JPEG to Azure AI Vision, count, drop the frame. Used only where plan A fails. |
+| Counting | On the device, from a non-image sensor or on-device CV. The firmware is the whole pipeline; only the integer count leaves the stand. |
 | Sensor choice | Decided per area, from measurements. See [sensor-evaluation.md](sensor-evaluation.md). We expect to mix: ToF/LiDAR for small/covered stands, on-device CV on ESP32-S3 or a small SBC for wider open racks. |
-| Recognizer (plan B) | Azure AI Vision, Image Analysis object detection, counting the boxes labelled `bicycle`. |
-| Images | Default path never sees one. On the plan-B fallback, an image is held in memory for one recognition call and then dropped. Only the count is kept. |
+| Images | The ingest path never sees one. The debug app exposes a side channel for cameras to upload the latest frame they analysed; those bytes are kept in memory only and never written to Cosmos. |
 
 ## How the pieces connect
 
@@ -43,13 +39,11 @@ The first version only covers the API, the shared contracts, the tools and an un
 flowchart LR
   subgraph Field
     D["Devices ×n<br/>count on device<br/>(ToF · LiDAR · on-device CV)"]
-    DF["Fallback device<br/>cropped image upload<br/>(only where plan A fails)"]
     S["Simulator<br/>same API, sim keys"]
   end
   C[("velo-stands-cosmos/stands.yaml<br/>areas · stands · devices")]
   subgraph Azure
-    F["Azure Functions<br/>POST /v1/readings<br/>POST /v1/images (fallback)<br/>GET /v1/device/config<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
-    V["AI Vision<br/>(fallback only)"]
+    F["Azure Functions<br/>POST /v1/readings<br/>GET /v1/device/config<br/>GET /v1/state<br/>GET /v1/config<br/>POST /v1/negotiate<br/>GET /v1/history"]
     DB[("Cosmos DB serverless<br/>state · readings")]
     P["Web PubSub<br/>hub: occupancy"]
   end
@@ -57,10 +51,8 @@ flowchart LR
   L["Landing page<br/>live counter"]
 
   D -- "HTTPS + X-Api-Key<br/>count only" --> F
-  DF -. fallback .-> F
   S --> F
   C -. bundled at deploy .-> F
-  F -. fallback .-> V
   F --> DB
   F == broadcast ==> P
   P == wss ==> A
@@ -73,12 +65,10 @@ flowchart LR
 
 | Part | Tech | Job |
 |---|---|---|
-| Devices (plan A) | ToF arrays, LiDAR (e.g. RPLidar C1), mmWave radar, ultrasonic arrays, on-device CV on ESP32-S3 — one per stand or several | Count locally, every 60 s or on change, and send only the integer. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
-| Devices (plan B, fallback) | ESP32-CAM / ESP32-S3-CAM | Send a cropped JPEG for cloud counting. Used only where no plan-A sensor configuration proves out. |
+| Devices | ToF arrays, LiDAR (e.g. RPLidar C1), mmWave radar, ultrasonic arrays, on-device CV on ESP32-S3 — one per stand or several | Count locally, every 60 s or on change, and send only the integer. TLS uses the ESP certificate bundle, so Azure certificate rotations don't break the devices. |
 | Sensor evaluation | `code/firmware/experiments/*` + `documentation/sensor-evaluation.md` | For each candidate sensor: wiring, firmware spike, bench + on-site accuracy, false-positive rate, cost, power, mounting constraints. The results pick what we deploy. |
 | Config | `code/backend/velo-stands-cosmos/stands.yaml` | The single source of truth for areas, stands and devices. CI validates it. The build copies it into the Function App, and copies a public subset (without hashes) into the front ends. |
-| API | Azure Functions, Node 22, TypeScript | Authenticates devices, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. The `/v1/images` endpoint is only used by fallback devices. |
-| Recognition (fallback) | Azure AI Vision, Image Analysis object detection | Counts the boxes labelled `bicycle` above a confidence threshold set in the config. Only engaged for stands flagged as plan B in the config. |
+| API | Azure Functions, Node 22, TypeScript | Authenticates devices, stores readings, adds up stands and areas, broadcasts changes and serves the snapshot. |
 | Database | Cosmos DB for NoSQL, serverless | Holds the latest state per area, plus raw readings with a TTL for history. |
 | Push | Azure Web PubSub | Sends each area update to every connected client. |
 | App | Next.js static export, Serwist, Capacitor | The product: where to park right now. One build runs as an installable PWA at `app.<domain>`, and Capacitor wraps the same build for iOS and Android. |
@@ -112,7 +102,6 @@ flowchart LR
 | [Azure Functions](https://learn.microsoft.com/azure/azure-functions/) | Serverless API. |
 | [Cosmos DB serverless](https://learn.microsoft.com/azure/cosmos-db/serverless) | Pay-per-request database. |
 | [Web PubSub](https://learn.microsoft.com/azure/azure-web-pubsub/) | Managed WebSockets. |
-| [AI Vision Image Analysis](https://learn.microsoft.com/azure/ai-services/computer-vision/overview-image-analysis) | Prebuilt object detection. |
 | [Static Web Apps](https://learn.microsoft.com/azure/static-web-apps/) | Hosting for both front ends. |
 | [Terraform](https://www.terraform.io/) | Infrastructure as code (with the `azurerm` provider). |
 
@@ -135,8 +124,6 @@ flowchart LR
 2. The Function hashes the API key and finds the device in the bundled config, which gives it the stand and the mode. The device never says who it is in the request body.
 3. The Function appends the reading to `readings` with its source and stores the device's latest count in `state`. The stand then has 20 − (9 + 8) = 3 free slots. The area total is the sum of its stands.
 4. A timer Function broadcasts the status of every stand through Web PubSub every 10 s, so every open client shows the new count within about 10 s.
-
-**Fallback path.** If a stand is on plan B (no sensor configuration proved out for it), its device is an ESP32-CAM in `cloud` mode: it sends a cropped JPEG to `POST /v1/images`. The Function calls Azure AI Vision, counts the bicycles, drops the image, and from step 3 on the path is identical.
 
 A client calls `/negotiate` and opens the WebSocket. Web PubSub tells the Function about the new connection (`connected` event), and the Function sends that client the current snapshot right away. Every broadcast is a full snapshot, so a client that reconnects never misses anything.
 
@@ -164,7 +151,7 @@ stands:
     slots: 20
 
 devices:
-  # Plan A: non-image sensors, count locally, send only an integer
+  # Non-image sensors or on-device CV, counting locally and sending only the integer
   - id: tof-01
     stand: fsw-1
     hardware: vl53l5cx-array   # 8×8 ToF, one head per bay group
@@ -177,21 +164,8 @@ devices:
     keyHash: "sha256:51b0…07cd"
     config:                    # device-specific knobs, fetched at boot
       slots: 8                 #   how many slot bays the LiDAR covers
-      occupiedMm: 650          #   hysteresis thresholds (mm)
-      freeMm: 850
+      freeMm: 850              #   < freeMm → bike, ≥ freeMm → free (both inside bikeRange)
       reportIntervalMs: 10000  #   how often to POST a reading
-
-  # Plan B: only where no sensor configuration proved out for this stand
-  - id: cam-fallback-01
-    stand: flow-garage-north-3
-    hardware: esp32-s3-cam
-    mode: cloud                # sends an image for cloud recognition
-    keyHash: "sha256:a4e1…22bd"
-
-recognition:                   # only used by cloud-mode (fallback) devices
-  model: azure-ai-vision       # Image Analysis, object detection
-  label: bicycle
-  minConfidence: 0.5
 
 settings:
   staleAfterSeconds: 300
@@ -202,11 +176,11 @@ To add a device, run `pnpm device:add tof-02 --stand fsw-1 --mode device --hardw
 
 ### Per-device config
 
-A device's `config:` block is a free-form mapping of knobs the firmware understands — thresholds, how many slot bays the sensor covers, report cadence, calibration windows. The backend treats it as opaque: it rides in the catalog in Cosmos and comes back verbatim through `GET /api/v1/device/config` (authenticated with `X-Api-Key`). The firmware fetches its own config on boot, falls back to its compile-time defaults if the fetch fails, and clamps every value to a plausible range so a typo in YAML can't brick a sensor. For the LiDAR firmware thor this covers `slots`, `occupiedMm` / `freeMm`, `bikeRangeMinMm` / `bikeRangeMaxMm`, `emaAlpha`, `stableLatch`, `calibrationMs` and `reportIntervalMs`. New sensors add their own keys without any backend change.
+A device's `config:` block is a free-form mapping of knobs the firmware understands — thresholds, how many slot bays the sensor covers, report cadence, calibration windows. The backend treats it as opaque: it rides in the catalog in Cosmos and comes back verbatim through `GET /api/v1/device/config` (authenticated with `X-Api-Key`). The firmware fetches its own config on boot, falls back to its compile-time defaults if the fetch fails, and clamps every value to a plausible range so a typo in YAML can't brick a sensor. For the LiDAR firmware thor this covers `slots`, `freeMm`, `bikeRangeMinMm` / `bikeRangeMaxMm`, `emaAlpha`, `stableLatch`, `calibrationMs` and `reportIntervalMs`. New sensors add their own keys without any backend change.
 
 ## Device API
 
-There are three endpoints, and all three use the same API key header. The key identifies the device, and everything else about the device comes from the config.
+There are two endpoints, and both use the same API key header. The key identifies the device, and everything else about the device comes from the config.
 
 ### Fetch the device's own config
 
@@ -222,8 +196,7 @@ X-Api-Key: vs_3q9Z…
   "slots": 20,                 // the stand's capacity
   "config": {                  // device-specific knobs, verbatim from YAML
     "slots": 8,                //   how many slot bays the LiDAR covers
-    "occupiedMm": 650,
-    "freeMm": 850,
+    "freeMm": 850,             //   < freeMm → bike, ≥ freeMm → free (both inside bikeRange)
     "reportIntervalMs": 10000  //   single source of truth for how often to POST
   }
 }
@@ -243,36 +216,16 @@ Content-Type: application/json
 202 { "device": "cam-01", "nextInSeconds": 60 }
 ```
 
-### Image for cloud counting
-
-```http
-POST /api/v1/images
-X-Api-Key: vs_8kLm…
-Content-Type: image/jpeg
-X-Seq: 1843
-X-Device-Count: 9
-
-<JPEG cropped to the stand, ≤ 640 px long side, ≤ 1 MB>
-```
-
-`X-Device-Count` is optional and stored for comparison only.
-
-```json
-200 { "device": "cam-02", "occupied": 8, "source": "cloud", "nextInSeconds": 60 }
-```
-
 ### Errors
 
 | Status | When |
 |---|---|
 | 401 | The key is unknown or missing. |
-| 409 | The endpoint doesn't match the device's mode: an image from a `device`-mode device, or a count from a `cloud`-mode one. |
-| 413 / 415 | The image is too large, or isn't JPEG or PNG. |
+| 409 | The device is not assigned to a stand. |
 | 422 | The JSON body is invalid: a negative count, a count above the stand's slots, or an unknown field. |
 | 429 | One device sent more than one request in 5 s. |
-| 502 | The recognizer failed. The device retries next cycle, and the stand keeps its last count until it goes stale. |
 
-- The JSON schema has no field that could carry an image, and unknown fields are rejected. Images only go through `/images`, which never stores them.
+- The JSON schema has no field that could carry an image, and unknown fields are rejected. Only counts reach the backend.
 - `seq` lets the server drop duplicates and out-of-order retries. Each device sends at least every 60 s, which also serves as its heartbeat.
 - The server compares key hashes in constant time. Rotating a key means changing the config and reflashing one device.
 
@@ -291,7 +244,7 @@ The client endpoints need no authentication. They are all read-only and return c
 | `GET /api/v1/debug/devices` | Per-device summary for the debug app: public info plus `lastSeenAt`, `stale` and `lastImage` |
 | `GET /api/v1/debug/devices/{deviceId}/logs?limit=200` | Recent log lines of one device, from an in-memory ring buffer the ingest handler writes to |
 | `GET /api/v1/debug/devices/{deviceId}/image` | The latest JPEG the device uploaded for debug viewing, or 404 if none yet |
-| `POST /api/v1/debug/images` | A device uploads its latest frame for the debug app. `X-Api-Key` + `Content-Type: image/jpeg` (cameras) or `image/svg+xml` (non-image sensors send a vector sketch of what they see). In-memory only, never written to Cosmos. Unrelated to the plan-B `/v1/images` recognition path |
+| `POST /api/v1/debug/images` | A device uploads its latest frame for the debug app. `X-Api-Key` + `Content-Type: image/jpeg` (cameras) or `image/svg+xml` (non-image sensors send a vector sketch of what they see). In-memory only, never written to Cosmos |
 
 ```json
 GET /api/v1/state
@@ -320,7 +273,6 @@ ws.onmessage = (e) => apply(JSON.parse(e.data));
 - Azure Functions can't hold WebSockets, so Web PubSub (hub `occupancy`) holds them and the Functions only send.
 - A timer Function broadcasts the full snapshot every 10 s (`PUSH_SCHEDULE`). Staleness is worked out on each broadcast, so a quiet device shows up without extra work.
 - A new connection gets the snapshot at once through the `connected` event handler, instead of waiting for the next broadcast.
-- For a stand with a cloud device that also sends its own count, `/history` shows the device count and the cloud count side by side.
 
 ## Data model
 
@@ -387,7 +339,7 @@ erDiagram
 
 ```ts
 type AreaKind = "covered" | "inside" | "open";
-type DeviceMode = "device" | "cloud"; // sends a count | sends an image
+type DeviceMode = "device"; // devices count locally and POST the integer
 
 interface Site   { id: string; name: string; timezone: string }
 interface Area   { id: string; name: string; kind: AreaKind }
@@ -399,12 +351,11 @@ interface Device {
   mode: DeviceMode;
   keyHash: `sha256:${string}`; // never shipped to the front ends
 }
-interface Recognition { model: "azure-ai-vision"; label: "bicycle"; minConfidence: number }
 interface Settings    { staleAfterSeconds: number; readingTtlDays: number }
 
 interface Config {
   version: 1; site: Site; areas: Area[]; stands: Stand[]; devices: Device[];
-  recognition: Recognition; settings: Settings;
+  settings: Settings;
 }
 ```
 
@@ -419,11 +370,8 @@ interface Reading {
   standId: string;
   areaId: string;          // denormalised for history by area
   deviceId: string;
-  source: "device" | "cloud";
+  source: "device";
   occupied: number;        // bikes this device sees, 0 … stand.slots
-  deviceCount?: number;    // cloud only: the device's own count, for comparison
-  model?: string;          // cloud only
-  meanConfidence?: number; // cloud only: of detections above the threshold
   seq: number;
   measuredAt?: string;     // ISO 8601, only if the device has NTP time
   receivedAt: string;
@@ -441,7 +389,7 @@ interface AreaState {
 interface DeviceState {
   standId: string;
   occupied: number;
-  source: "device" | "cloud";
+  source: "device";
   seq: number;
   at: string;              // receivedAt of the reading that set it
 }
@@ -470,5 +418,5 @@ interface AreaUpdate { type: "area"; id: string; capacity: number;
 
 These rules live in one pure function, `computeViews(config, states, now)`, in `packages/contracts`. It is tested with Vitest and used by both `/state` and the broadcast.
 
-**Volume.** Ten devices reporting once a minute make about 14,000 readings a day, which costs a few cents in serverless request units. Image recognition is the larger cost, at roughly a franc per thousand images, so cloud-mode devices may want to report less often.
+**Volume.** Ten devices reporting once a minute make about 14,000 readings a day, which costs a few cents in serverless request units.
 

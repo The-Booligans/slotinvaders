@@ -131,12 +131,6 @@ function createReadingsHandler({
     if (device.status === "maintenance") {
       return finish(reply(403, { error: "device is in maintenance" }), `device ${device.deviceId} is in maintenance`);
     }
-    if (device.mode !== "device") {
-      return finish(
-        reply(409, { error: "this device is set up for cloud counting and must send images to /api/v1/images" }),
-        `device ${device.deviceId} has mode "${device.mode}"`
-      );
-    }
 
     const assignment = catalog.openAssignmentByDevice.get(device.deviceId);
     const stand = assignment && catalog.stands.get(assignment.standId);

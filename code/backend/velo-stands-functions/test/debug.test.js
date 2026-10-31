@@ -31,14 +31,14 @@ function fakeContainer(initial = []) {
 const KEYS = { thor: "vs_thor", drone: "vs_drone", oldie: "vs_oldie" };
 
 function catalogDocs() {
-  const device = (deviceId, mode = "device", status = "active", hardware = "vl53l5cx-array") => ({
+  const device = (deviceId, status = "active", hardware = "vl53l5cx-array") => ({
     id: `device:${deviceId}`,
     type: "device",
     siteId: "reinach",
     deviceId,
     name: `${deviceId} test`,
     hardware,
-    mode,
+    mode: "device",
     status,
     keyHash: hashKey(KEYS[deviceId] ?? deviceId),
   });
@@ -65,8 +65,8 @@ function catalogDocs() {
     { id: "stand:kaegen-hof-1", type: "stand", siteId: "reinach", standId: "kaegen-hof-1", areaId: "kaegen-hof", name: "Kägenstrasse 2 – Hof, Stand 1", slots: 40 },
     { id: "stand:gone", type: "stand", siteId: "reinach", standId: "gone", areaId: "kaegen-hof", name: "retired", slots: 10, retiredAt: "2026-01-01T00:00:00.000Z" },
     device("thor"),
-    device("drone", "cloud", "active", "esp32-cam"),
-    device("oldie", "device", "retired"),
+    device("drone", "active", "esp32-cam"),
+    device("oldie", "retired"),
     assignment("thor", "kaegen-hof-1"),
     assignment("drone", "kaegen-hof-1"),
   ];
@@ -81,7 +81,7 @@ function setup({ now = new Date("2026-11-02T07:00:00.000Z"), stateDocs } = {}) {
         areaId: "kaegen-hof",
         devices: {
           thor: { standId: "kaegen-hof-1", occupied: 9, source: "device", seq: 1, at: new Date(now.getTime() - 10_000).toISOString() },
-          drone: { standId: "kaegen-hof-1", occupied: 2, source: "cloud", seq: 3, at: new Date(now.getTime() - 10 * 60_000).toISOString() },
+          drone: { standId: "kaegen-hof-1", occupied: 2, source: "device", seq: 3, at: new Date(now.getTime() - 10 * 60_000).toISOString() },
         },
         updatedAt: now.toISOString(),
       },

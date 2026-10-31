@@ -3,9 +3,9 @@
 M5Stack AtomS3R-CAM-M12 (ESP32-S3 + OV3660). Runs the Espressif ESP-DL
 `coco_detect` YOLO11n model on every captured frame, counts the detections
 whose COCO class is `bicycle`, and POSTs that integer to the backend as a
-plan-A `/api/v1/readings` call. Also uploads the latest frame to
-`/api/v1/debug/images` so the debug app has something to look at. No image
-ever leaves the device over the plan-A path.
+`/api/v1/readings` call. Also uploads the latest frame to
+`/api/v1/debug/images` so the debug app has something to look at. The full
+frame stays in RAM; only the count leaves the device.
 
 Everything else — authentication, endpoints, error codes — matches
 [`code/firmware/README.md`](../README.md).
@@ -13,8 +13,7 @@ Everything else — authentication, endpoints, error codes — matches
 ## Build toolchain
 
 Unlike `thor` and `hydra`, mule is **ESP-IDF**, not Arduino. ESP-DL isn't
-packaged for the Arduino core, and we want on-device inference rather than
-cloud-mode uploads.
+packaged for the Arduino core, and the inference runs on the device.
 
 Requirements:
 

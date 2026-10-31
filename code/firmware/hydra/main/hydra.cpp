@@ -12,7 +12,7 @@
 //   For every captured frame, run YOLO11 inference, count detections whose
 //   category is "bicycle" (COCO class 1) and whose score is >= minScore.
 //   Every reportIntervalMs the count is POSTed to the backend as a normal
-//   plan-A reading:
+//   reading:
 //
 //     POST ${API_BASE}/api/v1/readings
 //     X-Api-Key: ${DEVICE_API_KEY}
@@ -29,8 +29,8 @@
 //     X-Seq: SEQ
 //     <jpeg bytes>
 //
-// Only the integer count ever reaches the plan-A ingest endpoint. The debug
-// image is held in memory on the Function App and never written to Cosmos.
+// Only the integer count ever reaches the ingest endpoint. The debug image
+// is held in memory on the Function App and never written to Cosmos.
 
 #include <cstdio>
 #include <cstdlib>
@@ -299,8 +299,8 @@ static bool reportReading(int occupied) {
 
 // ---------------- Debug JPEG upload ---------------------------------------
 //
-// Mirrors hydra's upload. Non-fatal if it fails: the plan-A count has already
-// landed and the next cycle will try again.
+// Mirrors hydra's upload. Non-fatal if it fails: the count has already landed
+// and the next cycle will try again.
 
 static bool uploadDebugJpeg(const uint8_t *jpg, size_t len) {
     char seqStr[16];

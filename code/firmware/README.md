@@ -7,8 +7,8 @@ Every sketch in this directory is a Slot Invaders bike-counting device. They all
 | Dir | Hardware | What it sends | Mode |
 |---|---|---|---|
 | [`hydra/`](hydra) | AtomS3R-CAM-M12 (ESP32-S3 + OV3660) | Raw JPEG → debug viewer | debug only |
-| [`thor/`](thor) | AtomS3 + RPLIDAR C1 | Integer count + SVG preview | `device` (plan A) |
-| [`mule/`](mule) | AtomS3R-CAM-M12 (ESP32-S3 + OV3660) | Integer count (YOLO on-device) | `device` (plan A) |
+| [`thor/`](thor) | AtomS3 + RPLIDAR C1 | Integer count + SVG preview | `device` |
+| [`mule/`](mule) | AtomS3R-CAM-M12 (ESP32-S3 + OV3660) | Integer count (YOLO on-device) | `device` |
 
 Each folder has its own README with the wiring, boot log and tuning knobs.
 
@@ -73,13 +73,13 @@ X-Api-Key: vs_3q9Z…
   "stand": "kaegen-hof-1",
   "slots": 40,
   "reportIntervalSeconds": 60,
-  "config": { "slots": 8, "occupiedMm": 650, "freeMm": 850, "stableLatch": 3, ... }
+  "config": { "slots": 8, "freeMm": 850, "stableLatch": 3, ... }
 }
 ```
 
 Devices fetch this once on boot and apply the keys they recognise; missing keys keep the firmware's defaults. `thor` uses it to pull thresholds and slot count without reflashing. `hydra` and `mule` ignore it.
 
-### `POST /api/v1/readings`  — plan A count (JSON)
+### `POST /api/v1/readings`  — count (JSON)
 
 ```http
 POST /api/v1/readings
@@ -96,20 +96,6 @@ Content-Type: application/json
 The only required fields are `occupied` and `seq`. `fw`, `rssi` and `measuredAt` are optional diagnostics. **No field may carry an image**; unknown fields are rejected (422).
 
 `seq` is a device-local monotonic counter that lets the server drop duplicate and out-of-order retries. Each device should report at least every 60 s — that doubles as its heartbeat.
-
-### `POST /api/v1/images`  — plan B cropped JPEG (fallback)
-
-```http
-POST /api/v1/images
-X-Api-Key: vs_8kLm…
-Content-Type: image/jpeg
-X-Seq: 1843
-X-Device-Count: 9
-
-<JPEG cropped to the stand, ≤ 640 px long side, ≤ 1 MB>
-```
-
-Only cloud-mode devices use this. None of the sketches in this folder are cloud-mode today — the drone device slot in `stands.yaml` is reserved for an ESP32-CAM fallback build.
 
 ### `POST /api/v1/debug/images`  — debug upload (not a count)
 
@@ -129,11 +115,10 @@ Keeps the latest frame per device in backend memory (not Cosmos). Served back by
 | Status | When |
 |---|---|
 | 401 | `X-Api-Key` missing or unknown |
-| 409 | Mode mismatch (count from a cloud-only device, image from a device-only device) |
-| 413 / 415 | Image too large, or not JPEG / PNG / SVG |
+| 409 | Device is not assigned to a stand |
+| 413 / 415 | Debug image too large, or not JPEG / PNG / SVG |
 | 422 | JSON invalid: negative count, count above the stand's slots, or unknown field |
 | 429 | More than one request within 5 s from the same device |
-| 502 | Cloud recognizer failed (plan B only). Device retries next cycle. |
 
 ## Flashing
 

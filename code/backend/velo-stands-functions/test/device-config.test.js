@@ -40,7 +40,7 @@ function catalogDocs() {
       mode: "device",
       status: "active",
       keyHash: hashKey(KEYS.thor),
-      config: { slots: 8, occupiedMm: 650, freeMm: 850 },
+      config: { slots: 8, freeMm: 850 },
     },
     {
       id: "device:probe",
@@ -94,7 +94,7 @@ test("GET /v1/device/config returns the device's config, stand and slots", async
   assert.equal(res.jsonBody.stand, "kaegen-hof-1");
   assert.equal(res.jsonBody.slots, 40);
   assert.equal(res.jsonBody.reportIntervalSeconds, undefined, "report interval lives inside config, not at the top");
-  assert.deepEqual(res.jsonBody.config, { slots: 8, occupiedMm: 650, freeMm: 850 });
+  assert.deepEqual(res.jsonBody.config, { slots: 8, freeMm: 850 });
 });
 
 test("a device without a config block gets {}", async () => {

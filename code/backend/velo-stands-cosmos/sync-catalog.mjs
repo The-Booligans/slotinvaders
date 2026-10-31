@@ -26,7 +26,7 @@ import { parse } from "yaml";
 const DEFAULT_VALID_FROM = "2026-10-31";
 
 const AREA_KINDS = ["covered", "inside", "open"];
-const DEVICE_MODES = ["device", "cloud"];
+const DEVICE_MODES = ["device"];
 const DEVICE_STATUSES = ["active", "maintenance", "retired"];
 
 // ---------------------------------------------------------------------------
@@ -150,7 +150,6 @@ export function toCatalog(cfg) {
       id: `site:${siteId}`, type: "site", siteId,
       name: site.name ?? siteId,
       timezone: site.timezone ?? "Europe/Zurich",
-      recognition: cfg.recognition ?? null,
       settings: cfg.settings ?? null,
     },
     ...areas.map((a) => ({

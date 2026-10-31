@@ -25,7 +25,6 @@
 [![Azure Functions](https://img.shields.io/badge/Azure%20Functions-0062AD?style=flat&logo=azurefunctions&logoColor=white)](https://learn.microsoft.com/azure/azure-functions/)
 [![Cosmos DB](https://img.shields.io/badge/Cosmos%20DB-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/cosmos-db/)
 [![Web PubSub](https://img.shields.io/badge/Web%20PubSub-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/azure-web-pubsub/)
-[![AI Vision](https://img.shields.io/badge/AI%20Vision-0078D4?style=flat&logo=microsoftazure&logoColor=white)](https://learn.microsoft.com/azure/ai-services/computer-vision/)
 [![Terraform](https://img.shields.io/badge/Terraform-7B42BC?style=flat&logo=terraform&logoColor=white)](https://www.terraform.io/)
 
 [![ESP32](https://img.shields.io/badge/ESP32-E7352C?style=flat&logo=espressif&logoColor=white)](https://www.espressif.com/en/products/socs/esp32)
@@ -53,36 +52,28 @@ see; the app shows you where to park before you arrive.
 The challenge is explicit: **no faces, no license plates, no identifying or
 tracking individuals.** We take that further.
 
-**Plan A — counting without cameras.** Each stand uses non-image sensors (ToF
-arrays, LiDAR, mmWave radar, ultrasonic) or does inference on-device. The
-sensor stays local; only one integer — the number of bikes it currently sees —
-reaches the backend. There is no image to lose, store or leak.
-
-**Plan B — cloud image recognition.** Only if no sensor configuration proves
-out for a given stand in time. In that case an ESP32-CAM uploads a cropped
-JPEG, Azure AI Vision counts the bikes, and the image is dropped from memory
-in the same call. The code path exists as a fallback, not as the target.
+**Counting without cameras.** Each stand uses non-image sensors (ToF arrays,
+LiDAR, mmWave radar, ultrasonic) or does inference on-device. The sensor stays
+local; only one integer — the number of bikes it currently sees — reaches the
+backend. There is no image to lose, store or leak.
 
 We test every sensor we can get our hands on and record the numbers in
 [`documentation/sensor-evaluation.md`](documentation/sensor-evaluation.md).
-The best result per stand wins; cloud recognition is only used where nothing
-else clears the bar.
+The best result per stand wins.
 
 ## The idea in one picture
 
 ```
  ┌─ Field ──────────────────────┐      ┌─ Azure ─────────────────┐      ┌─ Clients ──┐
- │ Plan A: ToF · LiDAR · mmWave │─────▶│ Functions · Cosmos DB   │─────▶│ PWA        │
- │         on-device CV         │      │ Web PubSub              │      │ iOS/Android│
+ │ ToF · LiDAR · mmWave         │─────▶│ Functions · Cosmos DB   │─────▶│ PWA        │
+ │ on-device CV                 │      │ Web PubSub              │      │ iOS/Android│
  │   ─────  integer only  ────▶ │      │                         │      │ Landing    │
- │                              │      │                         │      └────────────┘
- │ Plan B (fallback): ESP32-CAM │ ···▶ │ AI Vision (drops image) │
- └──────────────────────────────┘      └─────────────────────────┘
+ └──────────────────────────────┘      └─────────────────────────┘      └────────────┘
 ```
 
-Devices `POST /v1/readings` with their count. Fallback devices `POST /v1/images`.
-Free slots = stand slots − sum of device counts. Updates go out via WebSockets,
-so every open client refreshes within about a second.
+Devices `POST /v1/readings` with their count. Free slots = stand slots − sum
+of device counts. Updates go out via WebSockets, so every open client refreshes
+within about a second.
 
 See [`documentation/architecture.md`](documentation/architecture.md) for the
 full picture, data model and API.
@@ -121,8 +112,7 @@ After changing app code, repeat steps 3–5 so Android gets the latest build.
 
 - **Front ends** — Next.js (static export) · Serwist (PWA) · Capacitor (iOS/Android) · shadcn/ui · Tailwind · three.js + R3F
 - **Backend** — Azure Functions (Node 22, TypeScript) · Cosmos DB serverless · Web PubSub
-- **Sensors (plan A)** — ST VL53L5CX ToF · RPLidar C1 · mmWave radar · ultrasonic arrays · on-device CV on ESP32-S3
-- **Fallback (plan B)** — ESP32-CAM / ESP32-S3-CAM + Azure AI Vision Image Analysis
+- **Sensors** — ST VL53L5CX ToF · RPLidar C1 · mmWave radar · ultrasonic arrays · on-device CV on ESP32-S3
 - **Shared** — Zod schemas, TypeScript contracts, `computeViews` pure function
 - **Tooling** — pnpm workspaces · Oxlint · Oxfmt · Vitest · Terraform
 
@@ -131,7 +121,7 @@ After changing app code, repeat steps 3–5 so Android gets the latest build.
 - **Event**: BaselHack 2026 · Fri 30 Oct – Sun 1 Nov 2026 · 48h
 - **Challenge owner**: Endress+Hauser
 - **Site**: Reinach campus — 2 property zones, 6 bike parking areas
-- **Hardware provided**: 10× ESP32 cameras with boards (we use them for on-device CV where possible, as the plan-B fallback otherwise)
+- **Hardware provided**: 10× ESP32 cameras with boards (we use them for on-device CV)
 
 Full brief in [`documentation/challenge-brief.md`](documentation/challenge-brief.md).
 Hackathon rules and judging notes in

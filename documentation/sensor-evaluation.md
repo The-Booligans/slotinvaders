@@ -6,9 +6,6 @@ The goal is to count bikes **without ever sending an image off the stand**. This
 document is the live record of every sensor we try, how well it works, and why
 we pick what we pick.
 
-Cloud image recognition (plan B) is only used for stands where none of these
-sensors proves out in time.
-
 ## What we score
 
 For each candidate we record:
@@ -103,15 +100,6 @@ Status legend: ⬜ not started · 🧪 testing · ✅ passed · ❌ ruled out
   realistic to retrofit at campus scale in a hackathon.
 - **Status:** likely out of scope; recorded for completeness.
 
-### Plan B — Cloud image recognition (Azure AI Vision)
-
-- **Idea:** fallback only. ESP32-CAM sends a cropped JPEG to `POST /v1/images`,
-  the Function calls Azure AI Vision, counts `bicycle` boxes, drops the image.
-- **Why last:** the image leaves the device, even if transiently. Everything
-  above tries to avoid that.
-- **Status:** code path exists in [`architecture.md`](architecture.md); engaged
-  per-stand via `mode: cloud` in `code/backend/velo-stands-cosmos/stands.yaml`.
-
 ## Results
 
 Fill one row per candidate as experiments complete. Keep numbers; link to the
@@ -124,17 +112,14 @@ spike for the method.
 | mmWave            | —          | —            | —      | —          | —     | ⬜      |
 | Ultrasonic grid   | —          | —            | —      | —          | —     | ⬜      |
 | ESP32-S3 on-device CV | —      | —            | —      | —          | —     | ⬜      |
-| Azure AI Vision (plan B) | — | —            | —      | n/a        | n/a   | ⬜      |
 
 ## Decision rule
 
 Per stand, in order:
 
-1. Pick the cheapest **plan A** candidate whose on-site accuracy clears the
-   bar for that stand's size and layout.
-2. If none clears the bar before the demo, mark the stand `mode: cloud` and
-   deploy an ESP32-CAM as the plan-B fallback.
-3. Record the choice and the measured numbers in
+1. Pick the cheapest candidate whose on-site accuracy clears the bar for that
+   stand's size and layout.
+2. Record the choice and the measured numbers in
    `code/backend/velo-stands-cosmos/stands.yaml` as a comment next to the
    device.
 

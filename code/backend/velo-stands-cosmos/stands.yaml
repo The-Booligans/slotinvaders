@@ -88,17 +88,10 @@ stands:
     # location: { lat: 0.0, lon: 0.0 }   # TODO
 
 devices:
-  # Flow Main — biggest covered rack; two cameras (one cloud fallback, one on-device YOLO).
-  - id: drone
-    name: Flow Main – camera (cloud fallback)
-    stand: flow-main-1
-    hardware: yolo
-    mode: cloud
-    status: active
-    keyHash: "sha256:e7eba53c1cd0243c57de1c802351165d484cdd3c55979b39bc2849e7e7640241"
+  # Flow Main — biggest covered rack; on-device YOLO camera.
   - id: mule
     name: Flow Main – on-device YOLO
-    stand: flow-main-1
+    stand: flow-sw-1
     hardware: yolo
     mode: device
     status: active
@@ -107,14 +100,14 @@ devices:
   # Sternenhof — covered rack, LiDAR + camera.
   - id: ghost
     name: Sternenhof – LiDAR sweep
-    stand: sternenhof-1
+    stand: flow-main-1
     hardware: lidar
     mode: device
     status: active
     keyHash: "sha256:c581feb715209c0212de3e5afc29761e64b181342934d1c9c9ab4115f4b29caa"
   - id: raven
     name: Sternenhof – camera
-    stand: sternenhof-1
+    stand: flow-main-1
     hardware: yolo
     mode: device
     status: active
@@ -123,14 +116,14 @@ devices:
   # Flow Garage South — inside garage, LiDAR + camera.
   - id: medic
     name: Flow Garage South – LiDAR sweep
-    stand: flow-garage-south-1
+    stand: sternenhof-1
     hardware: lidar
     mode: device
     status: active
     keyHash: "sha256:51b06d29ad63cdf9748700666d8ae1eff88241f377922fc4a6b24c0290fdc571"
   - id: reaper
     name: Flow Garage South – camera
-    stand: flow-garage-south-1
+    stand: sternenhof-1
     hardware: yolo
     mode: device
     status: active
@@ -139,7 +132,7 @@ devices:
   # Flow South West — LiDAR + camera cross-check.
   - id: roach
     name: Flow South West – LiDAR
-    stand: flow-sw-1
+    stand: flow-garage-south-1
     hardware: lidar
     mode: device
     status: active
@@ -162,17 +155,16 @@ devices:
     keyHash: "sha256:2402a58aea192bb6ae85d91417bb5730c773d232ba3a445a21ef08c72606b845"
     config:                       # thor fetches these at boot from /v1/device/config
       slots: 10                   # how many slot bays the LiDAR arc is split into
-      occupiedMm: 200             # slot ≤ this → bike
-      freeMm: 600                 # slot ≥ this → free; between → keep previous
-      bikeRangeMinMm: 100         # calibration: ignore returns closer than this
-      bikeRangeMaxMm: 1000        # calibration: ignore returns farther than this
+      freeMm: 600                 # slot ≥ this (and ≤ bikeRangeMaxMm) → free; < this (and ≥ bikeRangeMinMm) → bike
+      bikeRangeMinMm: 100         # ignore returns closer than this
+      bikeRangeMaxMm: 1000        # ignore returns farther than this
       emaAlpha: 0.3               # smoothing of the per-slot nearest return
       stableLatch: 3              # consecutive scans before flipping a slot
       calibrationMs: 8000         # how long the direction-learning window lasts
       reportIntervalMs: 5000      # how often to POST /v1/readings
   - id: probe
     name: Flow South East – camera, near row
-    stand: flow-se-1
+    stand: flow-garage-south-1
     hardware: yolo
     mode: device
     status: active
@@ -196,11 +188,6 @@ devices:
 #   assignments:
 #     - { device: raven,  stand: sternenhof-1, from: 2026-10-31, to: 2027-03-14 }
 #     - { device: viking, stand: sternenhof-1, from: 2027-03-14 }
-
-recognition: # only used by cloud-mode (fallback) devices
-  model: azure-ai-vision
-  label: bicycle
-  minConfidence: 0.5
 
 settings:
   staleAfterSeconds: 300
