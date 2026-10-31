@@ -18,11 +18,9 @@ export interface ParkingSpot {
   updatedAt: string | null;
   /** campus metres, +x east / +y north; null if the area isn't placed on the map */
   position: [number, number] | null;
+  /** metres from the user; null if the area isn't placed or the user's position is unknown */
   distanceM: number | null;
 }
-
-/** Stand-in for the user's position until device location is wired in: the main entrance. */
-export const MOCK_USER_POSITION: [number, number] = [40, 0];
 
 const WALKING_M_PER_MIN = 80;
 
@@ -63,10 +61,13 @@ export function groupByArea(stands: StandStatus[]): AreaTotals[] {
   return [...areas.values()];
 }
 
-/** Live stands as map spots, one per area, nearest first; areas without a map position go last. */
+/**
+ * Live stands as map spots, one per area, nearest to `from` first; areas without
+ * a distance go last. Without a user position (`from` null) they sort by name.
+ */
 export function toParkingSpots(
   stands: StandStatus[],
-  from: [number, number] = MOCK_USER_POSITION,
+  from: [number, number] | null,
   positions: Record<string, [number, number]> = AREA_POSITIONS,
 ): ParkingSpot[] {
   return groupByArea(stands)
@@ -75,7 +76,7 @@ export function toParkingSpots(
       return {
         ...area,
         position,
-        distanceM: position ? Math.round(distance(from, position)) : null,
+        distanceM: position && from ? Math.round(distance(from, position)) : null,
       };
     })
     .sort((a, b) => (a.distanceM ?? Infinity) - (b.distanceM ?? Infinity) || a.name.localeCompare(b.name));
